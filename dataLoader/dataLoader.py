@@ -6,40 +6,6 @@ import re
 import os
 import numpy as np
 
-
-PAD_ID = 0
-UNK_ID = 1
-wordembed_size = 200
-
-dm_single_close_quote = u'\u2019'  # unicode
-dm_double_close_quote = u'\u201d'
-END_TOKENS = ['.', '!', '?', '...', "'", "`", '"', dm_single_close_quote, dm_double_close_quote,
-              ")"]  # acceptable ways to end a sentence
-
-def fix_missing_period(line):
-    """Adds a period to a line that is missing a period"""
-    if "@highlight" in line: return line
-    if line == "": return line
-    if line[-1] in END_TOKENS: return line
-
-    return line + " ."
-
-def read_text_file(text_file):
-    lines = []
-    with open(text_file, "r") as f:
-        for line in f:
-            lines.append(line.strip())
-    return lines
-
-def hashhex(s):
-    """Returns a heximal formated SHA1 hash of the input string."""
-    h = hashlib.sha1()
-    h.update(s)
-    return h.hexdigest()
-
-def get_url_hashes(url_list):
-    return [hashhex(url.encode('utf-8')) for url in url_list]
-
 class Document():
     def __init__(self, content, summary):
         self.content = content
@@ -61,6 +27,40 @@ class Dataset():
 
     def __getitem__(self, index):
         return self._data[index]
+
+class Vocab():
+    def __init__(self):
+
+
+def fix_missing_period(line):
+    """Adds a period to a line that is missing a period"""
+
+    dm_single_close_quote = u'\u2019'  # unicode
+    dm_double_close_quote = u'\u201d'
+    END_TOKENS = ['.', '!', '?', '...', "'", "`", '"', dm_single_close_quote, dm_double_close_quote,
+                  ")"]  # acceptable ways to end a sentence
+
+    if "@highlight" in line: return line
+    if line == "": return line
+    if line[-1] in END_TOKENS: return line
+
+    return line + " ."
+
+def read_text_file(text_file):
+    lines = []
+    with open(text_file, "r") as f:
+        for line in f:
+            lines.append(line.strip())
+    return lines
+
+def hashhex(s):
+    """Returns a heximal formated SHA1 hash of the input string."""
+    h = hashlib.sha1()
+    h.update(s)
+    return h.hexdigest()
+
+def get_url_hashes(url_list):
+    return [hashhex(url.encode('utf-8')) for url in url_list]
 
 
 def build_dataset(args):
@@ -128,7 +128,8 @@ def build_dataset(args):
 
 
     print (args)
-    
+    print('start building Dataset')
+
     train_urls = ''.join((args.url_lists, 'train.txt'))
     test_urls = ''.join((args.url_lists, 'test.txt'))
     val_urls = ''.join((args.url_lists, 'val.txt'))
@@ -155,6 +156,19 @@ def build_dataset(args):
             ''.join((target_dir, 'val_%03d.pickle')),
             chunk_size = 10000)
 
+def build_vocab(args):
+    print(args)
+    print('start building vocab')
+
+    PAD_ID = 0
+    UNK_ID = 1
+    PAD_TOKEN = 'PAD_TOKEN'
+    UNK_TOKEN = 'UNK_TOKEN'
+
+    f = open(args.vocab)
+
+
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
 
@@ -162,6 +176,12 @@ if __name__=='__main__':
     parser.add_argument('-target_dir', type=str, default='../data/cnn_dailymail_data/finished_dm_data/')
     parser.add_argument('-url_lists', type=str, default='../data/cnn_dailymail_data/url_lists/dm_urls/')
 
+    parser.add_argument('-build_vocab', action='store_true', default=False)
+    parser.add_argument('-vocab', type=str, default='../data/cnn_dailymail_data/vocab')
+
     args = parser.parse_args()
 
-    build_dataset(args)
+    if agrs.build_vocab:
+        build_vocab(args)
+    else:
+        build_dataset(args)
