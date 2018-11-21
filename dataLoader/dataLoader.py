@@ -1,4 +1,10 @@
 import argparse
+import hashlib
+import pickle, tarfile
+import random
+import re
+import os
+import numpy as np
 
 
 PAD_ID = 0
@@ -15,7 +21,7 @@ def fix_missing_period(line):
     if "@highlight" in line: return line
     if line == "": return line
     if line[-1] in END_TOKENS: return line
-    # print line[-1]
+
     return line + " ."
 
 def read_text_file(text_file):
@@ -25,6 +31,14 @@ def read_text_file(text_file):
             lines.append(line.strip())
     return lines
 
+def hashhex(s):
+    """Returns a heximal formated SHA1 hash of the input string."""
+    h = hashlib.sha1()
+    h.update(s)
+    return h.hexdigest()
+
+def get_url_hashes(url_list):
+    return [hashhex(url.encode('utf-8')) for url in url_list]
 
 class Document():
     def __init__(self, content, summary):
@@ -81,10 +95,12 @@ def build_dataset(args):
         # Make abstract into a signle string, putting <s> and </s> tags around the sentences
         abstract = ' '.join(["%s %s %s" % ('<s>', sent, '</s>') for sent in highlights])
 
-        return article.split(' '), abstract.split(' ')
+        return article.split(' '), abstract.split(' ') # split sentence to words 
 
 
-    def write_to_pickle(url_file, source_dir, out_file, chunk_size = 10000):
+    def write_to_pickle(url_file, source_dir, target_dir, chunk_size = 10000):
+
+
         url_list = read_text_file(url_file)
         url_hashes = get_url_hashes(url_list) # the name of every story is mapped by hashhex
         url = zip(url_list, url_hashes)
@@ -96,18 +112,19 @@ def build_dataset(args):
         new_lines = []
         for i, filename in enumerate(story_fnames):
             if i % chunk_size == 0 and i > 0:
-                pickle.dump(Dataset(new_lines), open(out_file % (i / chunk_size), "wb"))
+                pickle.dump(Dataset(new_lines), open(target_dir % (i / chunk_size), "wb"))
+                print ('%d samples have been processed.' % (i))
                 new_lines = []
 
             try:
-                art, abs = get_art_abs(filename)
+                article, abstract = get_art_abs(filename)
             except:
-                print filename
+                print(filename)
                 continue
-            new_lines.append(Document(art, abs))
+            new_lines.append(Document(article, abstract))
 
         if new_lines != []:
-            pickle.dump(Dataset(new_lines), open(out_file % (i / chunk_size + 1), "wb"))
+            pickle.dump(Dataset(new_lines), open(target_dir % (i / chunk_size + 1), "wb"))
 
 
     print (args)
@@ -116,26 +133,34 @@ def build_dataset(args):
     test_urls = ''.join((args.url_lists, 'test.txt'))
     val_urls = ''.join((args.url_lists, 'val.txt'))
 
+    target_dir = args.target_dir + 'chunked/'
+    try:
+        os.makedirs(target_dir)
+    except OSError:
+        if not os.path.isdir(target_dir):
+            print ('can not create target_dir! ')
 
-    write_to_pickle(train_urls, 
-            ''.join((args.target_dir, 'chunked/train_%03d.pickle')),
+    write_to_pickle(train_urls,
+            args.source_dir,
+            ''.join((target_dir, 'train_%03d.pickle')),
             chunk_size = 10000)
 
-    write_to_pickle(train_urls, 
-            ''.join((args.target_dir, 'chunked/train_%03d.pickle')),
+    write_to_pickle(test_urls, 
+            args.source_dir, 
+            ''.join((target_dir, 'test_%03d.pickle')),
             chunk_size = 10000)
 
-    write_to_pickle(train_urls, 
-            ''.join((args.target_dir, 'chunked/train_%03d.pickle')),
+    write_to_pickle(val_urls, 
+            args.source_dir, 
+            ''.join((target_dir, 'val_%03d.pickle')),
             chunk_size = 10000)
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-source_dir', type=str, default='../data/cnn_dailymail_data/')
-    parser.add_argument('-target_dir', type=str, default='../data/cnn_dailymail_data/finished_cnn_dm_data/')
-    parser.add_argument('-url_lists', type=str, default='../data/cnn_dailymail_data/url_lists/all_urls/')
-    parser.add_argument('-worker_num', type=int, default=1)
+    parser.add_argument('-target_dir', type=str, default='../data/cnn_dailymail_data/finished_dm_data/')
+    parser.add_argument('-url_lists', type=str, default='../data/cnn_dailymail_data/url_lists/dm_urls/')
 
     args = parser.parse_args()
 
