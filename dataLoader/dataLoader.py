@@ -31,6 +31,56 @@ class Dataset():
 class Vocab():
     def __init__(self):
 
+        #  PAD_ID = 0
+        #  UNK_ID = 1
+        #  PAD_TOKEN = '<pad>'
+        #  UNK_TOKEN = '<unk>'
+        self.word_list = ['<pad>', '<unk>', '<s>', '<\s>']
+        self.word2idx = {}
+        self.idx2word = {}
+        self.count = 0
+        self.embedding = None
+
+    def __getitem__(self, key):
+        if self.word2idx.has_key(key):
+            return self.word2idx[key]
+        else:
+            return self.word2idx['<unk>']
+
+
+    def add_vocab(self, vocab_file):
+        with open(vocab_file, 'r') as f:
+            for line in f:
+                self.word_list.append(line.split()[0]) # only want the word, not the count
+            print ('read %d words from vocab file' % len(self.word_list))
+
+        for w in self.word_list:
+            self.word2idx[w] = self.count
+            self.idx2word[self.count] = w
+            self.count += 1
+
+    def add_embedding(self, embed_file, embed_size):
+        print('Loading embeddings ')
+        with open(embed_file, 'r') as f:
+            word_set = set(self.word_list)
+            embed_matrix = np.zeros(shape=(len(self.word_list), embed_size))
+
+            count = 0
+            for line in f:
+                splitLine = line.split()
+                word = splitLine[0]
+                if word in word_set:
+                    count += 1
+                    embedding = np.array([float(val) for val in splitLine[1:]])
+                    embed_matrix[self.word2idx[word]] = embedding
+
+                if count % 1000 == 0:
+                    print('processed %d data' % count)
+
+            self.embeddings = embed_matrix
+            print('%d words out of %d has embeddings in the embed_file' % (count, len(self.word_list)))
+
+
 
 def fix_missing_period(line):
     """Adds a period to a line that is missing a period"""
@@ -160,13 +210,11 @@ def build_vocab(args):
     print(args)
     print('start building vocab')
 
-    PAD_ID = 0
-    UNK_ID = 1
-    PAD_TOKEN = 'PAD_TOKEN'
-    UNK_TOKEN = 'UNK_TOKEN'
+    vocab = Vocab()
+    vocab.add_vocab(args.vocab_file)
+    vocab.add_embedding(args.embed_file, args.embed_size)
 
-    f = open(args.vocab)
-
+    pickle.dump(vocab, open(args.finished_vocab, 'wb'))
 
 
 if __name__=='__main__':
@@ -177,11 +225,14 @@ if __name__=='__main__':
     parser.add_argument('-url_lists', type=str, default='../data/cnn_dailymail_data/url_lists/dm_urls/')
 
     parser.add_argument('-build_vocab', action='store_true', default=False)
-    parser.add_argument('-vocab', type=str, default='../data/cnn_dailymail_data/vocab')
+    parser.add_argument('-vocab_file', type=str, default='../data/cnn_dailymail_data/vocab')
+    parser.add_argument('-embed_file', type=str, default='../data/cnn_dailymail_data/glove.6B.100d.txt')
+    parser.add_argument('-embed_size', type=int, default=100)
+    parser.add_argument('-finished_vocab', type=str, default='../data/cnn_dailymail_data/finished_dm_data/vocab_file.pickle')
 
     args = parser.parse_args()
 
-    if agrs.build_vocab:
+    if args.build_vocab:
         build_vocab(args)
     else:
         build_dataset(args)
