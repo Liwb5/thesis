@@ -224,6 +224,7 @@ if __name__=='__main__':
     parser.add_argument('-target_dir', type=str, default='../data/cnn_dailymail_data/finished_dm_data/')
     parser.add_argument('-url_lists', type=str, default='../data/cnn_dailymail_data/url_lists/dm_urls/')
 
+    # if you want to build vocab, below are some parameters that you should considern
     parser.add_argument('-build_vocab', action='store_true', default=False)
     parser.add_argument('-vocab_file', type=str, default='../data/cnn_dailymail_data/vocab')
     parser.add_argument('-embed_file', type=str, default='../data/cnn_dailymail_data/glove.6B.100d.txt')
