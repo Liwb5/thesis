@@ -102,7 +102,7 @@ def build_dataset(args):
                 print (e)
                 print (filename)
                 continue
-            new_lines.append(Document(article, abstract, label = [-1]))
+            new_lines.append(Document(article, abstract, label = [-1 for _ in range(len(article))]))
 
         if new_lines != []:
             pickle.dump(Dataset(new_lines), open(target_dir % (i / chunk_size + 1), "wb"))
