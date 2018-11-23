@@ -3,6 +3,8 @@ import numpy as np
 import random
 import pickle
 import json
+import torch
+from torch.autograd import Variable
 
 class Vocab():
     def __init__(self):
@@ -17,11 +19,52 @@ class Vocab():
         self.count = 0
         self.embed_matrix = None
 
-    def __getitem__(self, key):
-        if self.word2id.has_key(key):
+    def w2i(self, key):
+        if key in self.word2id:
             return self.word2id[key]
         else:
             return self.word2id[self.UNK_TOKEN]
+
+    def docs_to_features(self, examples, sent_trunc = 50, doc_trunc=100):
+        sents_list, targets, summaries, doc_lens = [], [], [], []
+        if not isinstance(examples,list):
+            examples = [examples]
+
+        # truncate document 
+        for example in examples:
+            max_sent_num = min(doc_trunc, len(example.content))
+            doc = example.content[:max_sent_num]
+            label = example.label[:max_sent_num]
+            sents_list += doc
+            targets += label
+            doc_lens.append(len(doc))
+            summaries.append(example.summary)
+
+        # trunc and pad sentence
+        max_sent_len = 0
+        batch_sents = []
+        for sent in sents_list:
+            words = sent.split()
+            if len(words) > sent_trunc:
+                words = words[:sent_trunc]
+            max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
+            batch_sents.append(words)
+
+        features = []
+        for sent in batch_sents:
+            feature = [self.w2i(w) for w in sent] + \
+                    [self.PAD_ID for _ in range(max_sent_len - len(sent))]
+            features.append(feature)
+            
+        #  doc_sent_features = []
+        #  doc_sent_features.append(features[:doc_lens[0]])
+        #  for i in range(len(doc_lens)-1):
+        #      doc_sent_features.append(features[doc_lens[i]:doc_lens[i+1]])
+
+        doc_sent_features = torch.LongTensor(features)
+        targets = torch.LongTensor(targets)
+
+        return doc_sent_features, targets, summaries, doc_lens
 
 
     def add_vocab(self, vocab_file):
