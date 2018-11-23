@@ -35,9 +35,9 @@ class Vocab():
             max_sent_num = min(doc_trunc, len(example.content))
             doc = example.content[:max_sent_num]
             label = example.label[:max_sent_num]
-            sents_list += doc
+            sents_list += doc # here we add different document's sentences in the same list
             targets += label
-            doc_lens.append(len(doc))
+            doc_lens.append(len(doc)) # doc_lens to record the sentences number of every document
             summaries.append(example.summary)
 
         # trunc and pad sentence
