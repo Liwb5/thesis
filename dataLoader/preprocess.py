@@ -55,8 +55,8 @@ def build_dataset(args):
         lines = [fix_missing_period(line) for line in lines]
 
         # Separate out article and abstract sentences
-        article_lines = []
-        highlights = []
+        article = []
+        summary = []
         next_is_highlight = False
         for idx, line in enumerate(lines):
             if line == "":
@@ -64,17 +64,18 @@ def build_dataset(args):
             elif line.startswith("@highlight"):
                 next_is_highlight = True
             elif next_is_highlight:
-                highlights.append(line)
+                summary.append(line)
             else:
-                article_lines.append(line)
+                article.append(line)
 
-        # Make article into a single string
-        article = ' '.join(article_lines)
+        #  # Make article into a single string
+        #  article = ' '.join(article)
+        #
+        #  # Make abstract into a signle string, putting <s> and </s> tags around the sentences
+        #  abstract = ' '.join(["%s %s %s" % ('<s>', sent, '</s>') for sent in summary])
 
-        # Make abstract into a signle string, putting <s> and </s> tags around the sentences
-        abstract = ' '.join(["%s %s %s" % ('<s>', sent, '</s>') for sent in highlights])
-
-        return article.split(' '), abstract.split(' ') # split sentence to words 
+        #  return article.split(' '), abstract.split(' ') # split sentence to words
+        return article, summary
 
 
     def write_to_pickle(url_file, source_dir, target_dir, chunk_size = 10000):
@@ -97,10 +98,11 @@ def build_dataset(args):
 
             try:
                 article, abstract = get_art_abs(filename)
-            except:
-                print(filename)
+            except Exception as e:
+                print (e)
+                print (filename)
                 continue
-            new_lines.append(Document(article, abstract))
+            new_lines.append(Document(article, abstract, label = [-1]))
 
         if new_lines != []:
             pickle.dump(Dataset(new_lines), open(target_dir % (i / chunk_size + 1), "wb"))
@@ -127,13 +129,13 @@ def build_dataset(args):
             ''.join((target_dir, 'train_%03d.pickle')),
             chunk_size = 10000)
 
-    write_to_pickle(test_urls, 
-            args.source_dir, 
+    write_to_pickle(test_urls,
+            args.source_dir,
             ''.join((target_dir, 'test_%03d.pickle')),
             chunk_size = 10000)
 
-    write_to_pickle(val_urls, 
-            args.source_dir, 
+    write_to_pickle(val_urls,
+            args.source_dir,
             ''.join((target_dir, 'val_%03d.pickle')),
             chunk_size = 10000)
 
