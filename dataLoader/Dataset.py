@@ -3,9 +3,14 @@
 import random
 
 class Document():
-    def __init__(self, content, summary):
+    def __init__(self, content, summary, label):
+        """ label: Sometimes you may using some other methods to extract
+                    which sentences to become ground truth
+        """
         self.content = content
         self.summary = summary
+        self.label = label
+
 
 class Dataset():
     def __init__(self, data_list):
@@ -15,7 +20,7 @@ class Dataset():
         return len(self._data)
 
     def __call__(self, batch_size, shuffle=True):
-        max_len = len(self)
+        max_len = len(self._data)
         if shuffle:
             random.shuffle(self._data)
         batchs = [self._data[index:index + batch_size] for index in range(0, max_len, batch_size)]
