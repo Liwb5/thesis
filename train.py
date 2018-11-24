@@ -9,9 +9,13 @@ import torch
 from torch.autograd import Variable
 
 sys.path.append('./dataLoader')
+sys.path.append('./utils')
+sys.path.append('./models')
+
 from Dataset import Document, Dataset
 from Vocab import Vocab
 from dataLoader import BatchDataLoader, PickleReader 
+from helper import Config
 
 np.set_printoptions(precision=4, suppress=True)
 
