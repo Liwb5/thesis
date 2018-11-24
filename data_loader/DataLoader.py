@@ -1,5 +1,4 @@
 # coding:utf-8
-
 import random
 import pickle
 import os
@@ -24,7 +23,7 @@ class PickleReader():
     this class intends to read pickle files converted by RawReader
     """
 
-    def __init__(self, pickle_data_dir="../data/CNN_DM_pickle_data/"):
+    def __init__(self, pickle_data_dir="../data/"):
         """
         :param pickle_data_dir: the base_dir where the pickle data are stored in
         this dir should contain train.p, val.p, test.p, and vocab.p
@@ -56,7 +55,8 @@ class PickleReader():
         """
         data_counter = 0
         # chunked_dir = self.base_dir + "chunked/"
-        chunked_dir = os.path.join(self.base_dir, 'chunked')
+        #  chunked_dir = os.path.join(self.base_dir, 'chunked')
+        chunked_dir = self.base_dir
         os_list = os.listdir(chunked_dir)
         if data_quota == -1: #none-quota randomize data
             random.seed()

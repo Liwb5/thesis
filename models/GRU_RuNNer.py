@@ -5,10 +5,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-class RNN_RNN(BasicModule):
+class GRU_RuNNer(BasicModule):
     def __init__(self, args, embed=None):
-        super(RNN_RNN, self).__init__(args)
-        self.model_name = 'RNN_RNN'
+        super(GRU_RuNNer, self).__init__(args)
+        self.model_name = str(type(self))
         self.args = args
 
         V = args.embed_num
@@ -22,6 +22,7 @@ class RNN_RNN(BasicModule):
         self.embed = nn.Embedding(V,D,padding_idx=0)
 
         if embed is not None:
+            embed = torch.Tensor(embed)
             self.embed.weight.data.copy_(embed)
 
         self.word_RNN = nn.GRU(
@@ -39,7 +40,7 @@ class RNN_RNN(BasicModule):
         self.fc = nn.Linear(2*H, 2*H)
 
         # parameters of classification layer
-        self.content = nn.Linear(2*H, bias=False)
+        self.content = nn.Linear(2*H, 1, bias=False)
         self.salience = nn.Bilinear(2*H,2*H,1,bias=False)
         self.novelty = nn.Bilinear(2*H,2*H,1,bias=False)
         self.abs_pos = nn.Linear(P_D,1,bias=False)
