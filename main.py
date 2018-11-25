@@ -87,28 +87,28 @@ def train(args):
             train_iter = data_loader.chunked_data_reader('train', data_quota=args.train_example_quota)
             step_in_epoch = 0
             for dataset in train_iter:
-                for step, docs in enumerate(BatchDataLoader(dataset, shuffle=True)):
+                for step, docs in enumerate(BatchDataLoader(dataset, batch_size = args.batch_size, shuffle=True)):
                     step_in_epoch += 1
                     features, target, _, doc_lens = vocab.docs_to_features(docs)
                     #  logging.debug(features)
                     #  logging.debug(target)
-                    time.sleep(5)
+                    #  time.sleep(5)
                     features, target = Variable(features), Variable(target)
                     if args.device is not None:
                         features = features.cuda()
                         target = target.cuda()
 
                     probs = extract_net(features, doc_lens)
-                    logging.debug(probs.data)
-                    #  loss = criterion(probs, target)
-                    #  optimizer.zero_grad()
-                    #  loss.backward()
-                    #  #  clip_grad_norm(extract_net.parameters(), args.max_norm)
-                    #  optimizer.step()
-                    #
-                    #  if args.debug:
-                    #      print('Batch ID:%d Loss:%f' %(step, loss.data[0]))
-                    #      continue
+                    #  logging.debug(probs)
+                    loss = criterion(probs, target)
+                    optimizer.zero_grad()
+                    loss.backward()
+                    #  clip_grad_norm(extract_net.parameters(), args.max_norm)
+                    optimizer.step()
+
+                    if args.debug:
+                        logging.info('Epoch: %d, Batch ID:%d Loss:%f' %(epoch, step, loss.data[0]))
+                        continue
                     #
                     #  if step % args.print_every == 0:
                     #      cur_loss = evaluate(extract_net, vocab, val_iter, criterion)
@@ -124,7 +124,7 @@ def train(args):
 
 
 if __name__=='__main__':
-    
+
     parser = argparse.ArgumentParser()
     # train
     parser.add_argument('-vocab_file', type=str, 
@@ -137,7 +137,7 @@ if __name__=='__main__':
             help='the directory of dataset' )
     parser.add_argument('-train_example_quota', type=int, default=-1,
                         help='how many train example to train on: -1 means full train data')
-    parser.add_argument('-epochs', type=int, default=10)
+    parser.add_argument('-epochs', type=int, default=100)
     parser.add_argument('-batch_size', type=int, default=20)
     parser.add_argument('-dropout', type=float, default=0.)
     parser.add_argument('-lr', type=float, default=1e-4)

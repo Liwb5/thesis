@@ -34,13 +34,15 @@ class BasicModule(torch.nn.Module):
         """ @words_out: (N, H). N: sentence number; H: hidden size
             @doc_lens: (B, 1). B: batch_size (document number)
         """
+        if not isinstance(doc_lens, list):
+            doc_lens = [doc_lens]
         pad_dim = words_out.size(1) 
         max_doc_len = max(doc_lens)
 
         sent_input = []
         start = 0
         for doc_len in doc_lens:
-            end = start + doc_lens
+            end = start + doc_len
             valid = words_out[start:end] # output: (doc_len, H)
             start = end
 

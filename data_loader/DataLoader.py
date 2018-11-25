@@ -59,7 +59,7 @@ class PickleReader():
         chunked_dir = self.base_dir
         os_list = os.listdir(chunked_dir)
         if data_quota == -1: #none-quota randomize data
-            random.seed()
+            #  random.seed()
             random.shuffle(os_list)
 
         for filename in os_list:

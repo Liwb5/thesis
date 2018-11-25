@@ -62,7 +62,7 @@ class Vocab():
         #      doc_sent_features.append(features[doc_lens[i]:doc_lens[i+1]])
 
         doc_sent_features = torch.LongTensor(features)
-        targets = torch.LongTensor(targets)
+        targets = torch.FloatTensor(targets)
 
         return doc_sent_features, targets, summaries, doc_lens
 
