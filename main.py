@@ -27,92 +27,98 @@ def train(args):
     args.log_dir = ''.join((args.log_dir, args.training_purpose))
 
     logging.basicConfig(filename = '%s.log' % args.log_dir, 
-            level=logging.INFO, format='[%(asctime)s : %(levelname)s]  %(message)s')
+            filemode = 'w',
+            level=logging.DEBUG, format='%(asctime)s : %(filename)s[line:%(lineno)d] : %(levelname)s:  %(message)s')
 
-    if args.device is not None: 
-        torch.cuda.set_device(args.device)
+    try:
+        if args.device is not None: 
+            torch.cuda.set_device(args.device)
 
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-
-
-    logging.info('loading vocab')
-    with open(args.vocab_file, 'rb') as f:
-        vocab = pickle.load(f)
+        torch.manual_seed(args.seed)
+        torch.cuda.manual_seed(args.seed)
+        random.seed(args.seed)
+        np.random.seed(args.seed)
 
 
-    logging.info('init data loader')
-    data_loader = PickleReader(args.data_dir)
+        logging.info('loading vocab')
+        with open(args.vocab_file, 'rb') as f:
+            vocab = pickle.load(f)
 
-    # update args
-    args.embed_num = vocab.embed_matrix.shape[0]
-    args.embed_dim = vocab.embed_matrix.shape[1]
-    logging.info('args: %s', args)
 
-    logging.info('init extractive model')
+        logging.info('init data loader')
+        data_loader = PickleReader(args.data_dir)
 
-    if args.model_name == "lstm_summarunner":
-        extract_net = SummaRuNNer(args)
-    elif args.model_name == "GRU_RuNNer":
-        extract_net = GRU_RuNNer(args, vocab.embed_matrix)
-    elif args.model_name == "bag_of_words":
-        extract_net = SimpleRuNNer(args)
-    elif args.model_name == "simpleRNN":
-        extract_net = SimpleRNN(args)
-    elif args.model_name == "RNES":
-        extract_net = RNES(args)
-    elif args.model_name == "Refresh":
-        extract_net = Refresh(args)
-    elif args.model_name == "simpleCONV":
-        extract_net = simpleCONV(args)
-    else:
-        logging.info("There is no model to load")
+        # update args
+        args.embed_num = vocab.embed_matrix.shape[0]
+        args.embed_dim = vocab.embed_matrix.shape[1]
+        logging.info('args: %s', args)
 
-    if args.device is not None: 
-        extract_net.cuda()
+        logging.info('init extractive model')
 
-    # loss function
-    criterion = nn.BCELoss()
-    optimizer = torch.optim.Adam(extract_net.parameters(), lr=args.lr)
-    extract_net.train()
+        if args.model_name == "lstm_summarunner":
+            extract_net = SummaRuNNer(args)
+        elif args.model_name == "GRU_RuNNer":
+            extract_net = GRU_RuNNer(args, vocab.embed_matrix)
+        elif args.model_name == "bag_of_words":
+            extract_net = SimpleRuNNer(args)
+        elif args.model_name == "simpleRNN":
+            extract_net = SimpleRNN(args)
+        elif args.model_name == "RNES":
+            extract_net = RNES(args)
+        elif args.model_name == "Refresh":
+            extract_net = Refresh(args)
+        elif args.model_name == "simpleCONV":
+            extract_net = simpleCONV(args)
+        else:
+            logging.error("There is no model to load")
+            sys.exit()
 
-    logging.info('starting training')
-    n_step = 100
-    for epoch in range(args.epochs):
-        train_iter = data_loader.chunked_data_reader('train', data_quota=args.train_example_quota)
-        step_in_epoch = 0
-        for dataset in train_iter:
-            for step, docs in enumerate(BatchDataLoader(dataset, shuffle=True)):
-                step_in_epoch += 1
-                features, target, _, doc_lens = vocab.docs_to_features(docs)
-                logging.info(features)
-                logging.info(target)
-                time.sleep(5)
-                #  features, target = Variable(features), Variable(target)
-                #  if args.device is not None:
-                #      features = features.cuda()
-                #      target = target.cuda()
-                #
-                #  probs = extract_net(features, doc_lens)
-                #  loss = criterion(probs, target)
-                #  optimizer.zero_grad()
-                #  loss.backward()
-                #  #  clip_grad_norm(extract_net.parameters(), args.max_norm)
-                #  optimizer.step()
-                #
-                #  if args.debug:
-                #      print('Batch ID:%d Loss:%f' %(step, loss.data[0]))
-                #      continue
-                #
-                #  if step % args.print_every == 0:
-                #      cur_loss = evaluate(extract_net, vocab, val_iter, criterion)
-                #      if cur_loss < min_loss:
-                #          min_loss = cur_loss
-                #          best_path = extract_net.save()
-                #      logging.info('Epoch: %3d | Min_Val_Loss: %.4f | Cur_Val_Loss: %.4f'\
-                #              % (epoch, min_loss, cur_loss))
+        if args.device is not None: 
+            extract_net.cuda()
+
+        # loss function
+        criterion = nn.BCELoss()
+        optimizer = torch.optim.Adam(extract_net.parameters(), lr=args.lr)
+        extract_net.train()
+
+        logging.info('starting training')
+        n_step = 100
+        for epoch in range(args.epochs):
+            train_iter = data_loader.chunked_data_reader('train', data_quota=args.train_example_quota)
+            step_in_epoch = 0
+            for dataset in train_iter:
+                for step, docs in enumerate(BatchDataLoader(dataset, shuffle=True)):
+                    step_in_epoch += 1
+                    features, target, _, doc_lens = vocab.docs_to_features(docs)
+                    logging.info(features)
+                    logging.info(target)
+                    time.sleep(5)
+                    #  features, target = Variable(features), Variable(target)
+                    #  if args.device is not None:
+                    #      features = features.cuda()
+                    #      target = target.cuda()
+                    #
+                    #  probs = extract_net(features, doc_lens)
+                    #  loss = criterion(probs, target)
+                    #  optimizer.zero_grad()
+                    #  loss.backward()
+                    #  #  clip_grad_norm(extract_net.parameters(), args.max_norm)
+                    #  optimizer.step()
+                    #
+                    #  if args.debug:
+                    #      print('Batch ID:%d Loss:%f' %(step, loss.data[0]))
+                    #      continue
+                    #
+                    #  if step % args.print_every == 0:
+                    #      cur_loss = evaluate(extract_net, vocab, val_iter, criterion)
+                    #      if cur_loss < min_loss:
+                    #          min_loss = cur_loss
+                    #          best_path = extract_net.save()
+                    #      logging.info('Epoch: %3d | Min_Val_Loss: %.4f | Cur_Val_Loss: %.4f'\
+                    #              % (epoch, min_loss, cur_loss))
+    except Exception as e:
+        logging.exception(e) # record error
+        raise
 
 
 
