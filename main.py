@@ -1,5 +1,6 @@
 # coding:utf8
 import sys
+import os
 import argparse
 import logging
 import numpy as np
@@ -22,8 +23,38 @@ from GRU_RuNNer import GRU_RuNNer
 
 np.set_printoptions(precision=4, suppress=True)
 
+def evaluate(args, net, vocab, criterion):
+    data_loader = PickleReader(args.data_dir)
+    val_iter = data_loader.chunked_data_reader('val', data_quota=args.train_example_quota)
+    net.eval()
+    total_loss = 0
+    batch_num = 0
+    for dataset in val_iter:
+        for docs in BatchDataLoader(dataset, batch_size = args.batch_size, shuffle=False):
+            features, target, _, doc_lens = vocab.docs_to_features(docs)
+            features, target = Variable(features), Variable(target)
+            if args.device is not None:
+                features = features.cuda()
+                target = target.cuda()
+
+            probs = extract_net(features, doc_lens)
+            loss = criterion(probs, target)
+            total_loss += loss.data[0]
+            #  del loss   # if not apply gradient. then the dynamic graph will stay in free. should delete manually
+            batch_num += 1
+
+    loss = total_loss / batch_num
+    net.train()
+    return loss
+
 def train(args):
     args.save_dir = ''.join((args.save_dir, args.training_purpose, '/'))
+    try:
+        os.makedirs(args.save_dir)
+    except OSError:
+        if not os.path.isdir(args.save_dir):
+            raise
+
     args.log_dir = ''.join((args.log_dir, args.training_purpose))
 
     logging.basicConfig(filename = '%s.log' % args.log_dir, 
@@ -82,12 +113,13 @@ def train(args):
         extract_net.train()
 
         logging.info('starting training')
-        n_step = 100
+        global_step = 0 
         for epoch in range(args.epochs):
             train_iter = data_loader.chunked_data_reader('train', data_quota=args.train_example_quota)
             step_in_epoch = 0
             for dataset in train_iter:
                 for step, docs in enumerate(BatchDataLoader(dataset, batch_size = args.batch_size, shuffle=True)):
+                    global_step += 1
                     step_in_epoch += 1
                     features, target, _, doc_lens = vocab.docs_to_features(docs)
                     #  logging.debug(features)
@@ -106,17 +138,19 @@ def train(args):
                     #  clip_grad_norm(extract_net.parameters(), args.max_norm)
                     optimizer.step()
 
-                    if args.debug:
-                        logging.info('Epoch: %d, Batch ID:%d Loss:%f' %(epoch, step, loss.data[0]))
-                        continue
-                    #
-                    #  if step % args.print_every == 0:
-                    #      cur_loss = evaluate(extract_net, vocab, val_iter, criterion)
-                    #      if cur_loss < min_loss:
-                    #          min_loss = cur_loss
-                    #          best_path = extract_net.save()
-                    #      logging.info('Epoch: %3d | Min_Val_Loss: %.4f | Cur_Val_Loss: %.4f'\
-                    #              % (epoch, min_loss, cur_loss))
+                    if global_step % args.print_every == 0:
+                        logging.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f' 
+                                %(epoch, global_step, step_in_epoch, loss.data[0]))
+
+                    if global_step*args.batch_size % args.eval_every == 0:
+                        val_loss = evaluate(args, extract_net, vocab, criterion)
+                        logging.info('Epoch: %d, global_batch: %d, Batch ID:%d val_Loss:%f'
+                                %(epoch, global_step, step_in_epoch, val_loss))
+
+                    if global_step*args.batch_size % args.report_every == 0:
+                        logging.info('saving model in %d step' % global_step)
+                        extract_net.save()
+
     except Exception as e:
         logging.exception(e) # record error
         raise
@@ -145,7 +179,9 @@ if __name__=='__main__':
             help='the max length of the output')
     parser.add_argument('-seed', type=int, default=1667)
     parser.add_argument('-debug', action='store_true', default=False)
-    parser.add_argument('-print_every', type=int, default=10000)
+    parser.add_argument('-report_every', type=int, default=100000)
+    parser.add_argument('-print_every', type=int, default=10)
+    parser.add_argument('-eval_every', type=int, default=10000)
     parser.add_argument('-seq_trunc',type=int,default=50)
     parser.add_argument('-max_norm',type=float,default=1.0)
     parser.add_argument('-training_purpose', type=str, default='first_train')
