@@ -90,15 +90,16 @@ def train(args):
                 for step, docs in enumerate(BatchDataLoader(dataset, shuffle=True)):
                     step_in_epoch += 1
                     features, target, _, doc_lens = vocab.docs_to_features(docs)
-                    logging.info(features)
-                    logging.info(target)
+                    #  logging.debug(features)
+                    #  logging.debug(target)
                     time.sleep(5)
-                    #  features, target = Variable(features), Variable(target)
-                    #  if args.device is not None:
-                    #      features = features.cuda()
-                    #      target = target.cuda()
-                    #
-                    #  probs = extract_net(features, doc_lens)
+                    features, target = Variable(features), Variable(target)
+                    if args.device is not None:
+                        features = features.cuda()
+                        target = target.cuda()
+
+                    probs = extract_net(features, doc_lens)
+                    logging.debug(probs.data)
                     #  loss = criterion(probs, target)
                     #  optimizer.zero_grad()
                     #  loss.backward()
@@ -127,10 +128,12 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     # train
     parser.add_argument('-vocab_file', type=str, 
-            default='./data/cnn_dailymail_data/finished_dm_data/vocab_file.pickle',
+            #  default='./data/cnn_dailymail_data/finished_dm_data/vocab_file.pickle',
+            default = './data/dm_data_from_summaRuNNer/finished_dm_data/vocab_file.pickle',
             help='the vocabulary of the dataset which contains words and embeddings')
     parser.add_argument('-data_dir', type=str, 
-            default='./data/cnn_dailymail_data/finished_dm_data/chunked/',
+            #  default='./data/cnn_dailymail_data/finished_dm_data/chunked/',
+            default = './data/dm_data_from_summaRuNNer/finished_dm_data/chunked/',
             help='the directory of dataset' )
     parser.add_argument('-train_example_quota', type=int, default=-1,
                         help='how many train example to train on: -1 means full train data')
