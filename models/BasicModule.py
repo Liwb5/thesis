@@ -16,7 +16,7 @@ class BasicModule(torch.nn.Module):
     def save(self):
         self.save_count += 1
         checkpoint = {'model': self.state_dict(), 'args': self.args}
-        path2save = '%s_%s_%d.pt' % (self.args.path2save, self.model_name, self.save_count)
+        path2save = '%s%s_%d.pt' % (self.args.save_dir, self.model_name, self.save_count)
         torch.save(checkpoint, path2save)
 
     def load(self, path2load):

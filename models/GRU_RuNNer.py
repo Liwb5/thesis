@@ -8,7 +8,7 @@ from torch.autograd import Variable
 class GRU_RuNNer(BasicModule):
     def __init__(self, args, embed=None):
         super(GRU_RuNNer, self).__init__(args)
-        self.model_name = str(type(self))
+        self.model_name = 'GRU_RuNNer'
         self.args = args
 
         V = args.embed_num
