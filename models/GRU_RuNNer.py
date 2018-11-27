@@ -97,14 +97,14 @@ class GRU_RuNNer(BasicModule):
         x = self.pad_doc(words_out, doc_lens)   # (B, max_doc_len, 2*H)
 
         ### sentence level encode
-        sent_out = self.sent_RNN(x)[0]
+        sent_out = self.sent_RNN(x)[0]      # (B, max_doc_len, 2*H)
 
-        docs = self.max_pool1d(sent_out, doc_lens)
+        docs = self.max_pool1d(sent_out, doc_lens)   # (B, 2*H)
 
         probs = []
         for index,doc_len in enumerate(doc_lens):
-            valid_hidden = sent_out[index,:doc_len,:]                            # (doc_len,2*H)
-            doc = F.tanh(self.fc(docs[index])).unsqueeze(0)
+            valid_hidden = sent_out[index,:doc_len,:]                            # (1,doc_len,2*H)
+            doc = F.tanh(self.fc(docs[index])).unsqueeze(0)  # the representation of one document
             s = Variable(torch.zeros(1,2*H))
             if self.args.device is not None:
                 s = s.cuda()
