@@ -7,9 +7,9 @@ import numpy as np
 import pickle
 import time
 import random
+from tqdm import tqdm
 sys.path.append('./data_loader')
 sys.path.append('./utils')
-sys.path.append('./models')
 
 import torch 
 import torch.nn as nn
@@ -18,8 +18,7 @@ from Dataset import Document, Dataset
 from Vocab import Vocab
 from DataLoader import BatchDataLoader, PickleReader 
 from helper import Config
-from GRU_RuNNer import GRU_RuNNer
-
+import models
 
 np.set_printoptions(precision=4, suppress=True)
 
@@ -31,7 +30,9 @@ def evaluate(args, net, vocab, criterion):
     batch_num = 0
     for dataset in val_iter:
         for docs in BatchDataLoader(dataset, batch_size = args.batch_size, shuffle=False):
-            features, target, _, doc_lens = vocab.docs_to_features(docs)
+            features, target, _, doc_lens = vocab.docs_to_features(docs, 
+                                                                sent_trunc = args.sent_trunc, 
+                                                                doc_trunc = args.doc_trunc)
             features, target = Variable(features), Variable(target)
             if args.device is not None:
                 features = features.cuda()
@@ -46,6 +47,78 @@ def evaluate(args, net, vocab, criterion):
     loss = total_loss / batch_num
     net.train()
     return loss
+
+def test(args):
+    try:
+        if args.device is not None: 
+            torch.cuda.set_device(args.device)
+
+        logging.info('loading vocab')
+        with open(args.vocab_file, 'rb') as f:
+            vocab = pickle.load(f)
+
+        logging.info('init data loader')
+        data_loader = PickleReader(args.data_dir)
+        test_iter = data_loader.chunked_data_reader('test')
+
+        if args.device is not None:
+            checkpoint = torch.load(args.load_dir)
+        else:
+            checkpoint = torch.load(args.load_dir, map_location=lambda storage, loc: storage)
+
+        # checkpoint['args']['device'] saves the device used as train time
+        # if at test time, we are using a CPU, we must override device to None
+        if args.device is None:
+            checkpoint['args'].device = None
+
+        net = getattr(models,checkpoint['args'].model_name)(checkpoint['args'])
+        net.load_state_dict(checkpoint['model'])
+
+        if args.device is not None: 
+            net.cuda()
+        net.eval()
+
+        args.output_dir = args.output_dir + checkpoint['args'].training_purpose + '/'
+        try:
+            os.makedirs(args.output_dir + 'ref/')
+            os.makedirs(args.output_dir + 'hyp/')
+        except OSError:
+            if not os.path.isdir(args.output_dir + 'ref/'):
+                raise
+            if not os.path.isdir(args.output_dir + 'hyp/'):
+                raise
+
+        file_id = 0
+        for dataset in tqdm(test_iter):
+            for step, docs in enumerate(BatchDataLoader(dataset, batch_size = checkpoint['args'].batch_size, shuffle=False)):
+                features, _, summaries, doc_lens = vocab.docs_to_features(docs,
+                                                                sent_trunc = args.sent_trunc, 
+                                                                doc_trunc = args.doc_trunc)
+                if args.device is not None:
+                    probs = net(Variable(features).cuda(), doc_lens)
+                else:
+                    probs = net(Variable(features), doc_lens)
+
+                start = 0
+                for doc_id, doc_len in enumerate(doc_lens):
+                    end = start + doc_len
+                    prob = probs[start:end]
+                    topk = min(args.topk, doc_len)
+                    topk_indices = prob.topk(topk)[1].cpu().data.numpy()
+                    topk_indices.sort()
+                    article = docs[doc_id].content
+                    hyp = [article[index] for index in topk_indices]
+                    ref = summaries[doc_id]
+                    with open(os.path.join(args.output_dir+'ref/',str(file_id)+'.txt'), 'w') as f:
+                        f.write('\n'.join(ref))
+                    with open(os.path.join(args.output_dir+'hyp/',str(file_id)+'.txt'), 'w') as f:
+                        f.write('\n'.join(hyp))
+
+                    start = end
+                    file_id += 1
+                
+    except Exception as e:
+        raise
 
 def train(args):
     args.save_dir = ''.join((args.save_dir, args.training_purpose, '/'))
@@ -121,7 +194,9 @@ def train(args):
                 for step, docs in enumerate(BatchDataLoader(dataset, batch_size = args.batch_size, shuffle=True)):
                     global_step += 1
                     step_in_epoch += 1
-                    features, target, _, doc_lens = vocab.docs_to_features(docs)
+                    features, target, _, doc_lens = vocab.docs_to_features(docs,
+                                                                sent_trunc = args.sent_trunc, 
+                                                                doc_trunc = args.doc_trunc)
                     #  logging.debug(features)
                     #  logging.debug(target)
                     #  time.sleep(5)
@@ -163,46 +238,54 @@ if __name__=='__main__':
     # train
     parser.add_argument('-vocab_file', type=str, 
             #  default='./data/cnn_dailymail_data/finished_dm_data/vocab_file.pickle',
-            default = './data/dm_data_from_summaRuNNer/finished_dm_data/vocab_file.pickle',
-            help='the vocabulary of the dataset which contains words and embeddings')
+            default = './data/dm_data_from_summaRuNNer/finished_dm_data/vocab_file.pickle',)
     parser.add_argument('-data_dir', type=str, 
             #  default='./data/cnn_dailymail_data/finished_dm_data/chunked/',
-            default = './data/dm_data_from_summaRuNNer/finished_dm_data/chunked/',
-            help='the directory of dataset' )
+            default = './data/dm_data_from_summaRuNNer/finished_dm_data/chunked/',)
     parser.add_argument('-train_example_quota', type=int, default=-1,
                         help='how many train example to train on: -1 means full train data')
     parser.add_argument('-epochs', type=int, default=100)
-    parser.add_argument('-batch_size', type=int, default=20)
+    parser.add_argument('-batch_size', type=int, default=20)      #### mark
     parser.add_argument('-dropout', type=float, default=0.)
     parser.add_argument('-lr', type=float, default=1e-4)
     parser.add_argument('-length_limit', type=int, default=-1,
             help='the max length of the output')
     parser.add_argument('-seed', type=int, default=1667)
-    parser.add_argument('-debug', action='store_true', default=False)
     parser.add_argument('-report_every', type=int, default=100000)
     parser.add_argument('-print_every', type=int, default=10)
     parser.add_argument('-eval_every', type=int, default=10000)
-    parser.add_argument('-seq_trunc',type=int,default=50)
+    parser.add_argument('-sent_trunc',type=int,default=50)
+    parser.add_argument('-doc_trunc',type=int,default=100)
     parser.add_argument('-max_norm',type=float,default=1.0)
-    parser.add_argument('-training_purpose', type=str, default='first_train')
     parser.add_argument('-log_dir', type=str, default='logs/')
 
     # model
     parser.add_argument('-save_dir', type=str, default='checkpoints/')
-    parser.add_argument('-model_name',type=str,default='GRU_RuNNer')
+    parser.add_argument('-model_name',type=str,default='GRU_RuNNer')   #### mark
     parser.add_argument('-embed_num',type=int,default=100000)
     parser.add_argument('-embed_dim',type=int,default=100)
     parser.add_argument('-pos_dim',type=int,default=50)
     parser.add_argument('-pos_num',type=int,default=100)
     parser.add_argument('-seg_num',type=int,default=10)
-    parser.add_argument('-hidden_size',type=int,default=200)
-    parser.add_argument('-kernel_num',type=int,default=100) # for CNN
-    parser.add_argument('-kernel_sizes',type=str,default='3,4,5')  # for CNN
+    parser.add_argument('-hidden_size',type=int,default=200)            #### mark
 
 
     #device
-    parser.add_argument('-device',type=int)
+    parser.add_argument('-device',type=int)    #### mark
+
+    # test
+    parser.add_argument('-load_dir',type=str,default='checkpoints/')  #### mark
+    parser.add_argument('-topk',type=int,default=3)
+    parser.add_argument('-output_dir',type=str,default='outputs/')
+
+    # option
+    parser.add_argument('-training_purpose', type=str, default='first_train')  #### mark
+    parser.add_argument('-test',action='store_true')
+    parser.add_argument('-debug', action='store_true', default=False)
 
     args = parser.parse_args()
 
-    train(args)
+    if args.test:
+        test(args)
+    else:
+        train(args)

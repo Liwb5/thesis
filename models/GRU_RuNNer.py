@@ -1,5 +1,5 @@
 # coding:utf-8
-from BasicModule import BasicModule
+from .BasicModule import BasicModule
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
