@@ -1,6 +1,7 @@
 data/*
 origin_data/*
 checkpoints/*
+outputs/*
 logs/*
 *ipynb
 .ipynb_checkpoints/
