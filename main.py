@@ -124,14 +124,15 @@ def train(args):
     args.save_dir = ''.join((args.save_dir, args.training_purpose, '/'))
     try:
         os.makedirs(args.save_dir)
+        os.makedirs(args.log_dir)
     except OSError:
         if not os.path.isdir(args.save_dir):
             raise
+        if not os.path.isdir(args.log_dir):
+            raise
 
-    args.log_dir = ''.join((args.log_dir, args.training_purpose))
-
-    logging.basicConfig(filename = '%s.log' % args.log_dir, 
-            filemode = 'w',
+    log_file = ''.join((args.log_dir, args.training_purpose, '.log'))
+    logging.basicConfig(filename = log_file, filemode = 'w',
             level=logging.DEBUG, format='%(asctime)s : %(filename)s[line:%(lineno)d] : %(levelname)s:  %(message)s')
 
     try:
@@ -143,11 +144,9 @@ def train(args):
         random.seed(args.seed)
         np.random.seed(args.seed)
 
-
         logging.info('loading vocab')
         with open(args.vocab_file, 'rb') as f:
             vocab = pickle.load(f)
-
 
         logging.info('init data loader')
         data_loader = PickleReader(args.data_dir)
@@ -158,24 +157,24 @@ def train(args):
         logging.info('args: %s', args)
 
         logging.info('init extractive model')
-
-        if args.model_name == "lstm_summarunner":
-            extract_net = SummaRuNNer(args)
-        elif args.model_name == "GRU_RuNNer":
-            extract_net = GRU_RuNNer(args, vocab.embed_matrix)
-        elif args.model_name == "bag_of_words":
-            extract_net = SimpleRuNNer(args)
-        elif args.model_name == "simpleRNN":
-            extract_net = SimpleRNN(args)
-        elif args.model_name == "RNES":
-            extract_net = RNES(args)
-        elif args.model_name == "Refresh":
-            extract_net = Refresh(args)
-        elif args.model_name == "simpleCONV":
-            extract_net = simpleCONV(args)
-        else:
-            logging.error("There is no model to load")
-            sys.exit()
+        extract_net = getattr(models, args.model_name)(args, vocab.embed_matrix)
+        #  if args.model_name == "lstm_summarunner":
+        #      extract_net = SummaRuNNer(args)
+        #  elif args.model_name == "GRU_RuNNer":
+        #      extract_net = GRU_RuNNer(args, vocab.embed_matrix)
+        #  elif args.model_name == "bag_of_words":
+        #      extract_net = SimpleRuNNer(args)
+        #  elif args.model_name == "simpleRNN":
+        #      extract_net = SimpleRNN(args)
+        #  elif args.model_name == "RNES":
+        #      extract_net = RNES(args)
+        #  elif args.model_name == "Refresh":
+        #      extract_net = Refresh(args)
+        #  elif args.model_name == "simpleCONV":
+        #      extract_net = simpleCONV(args)
+        #  else:
+        #      logging.error("There is no model to load")
+        #      sys.exit()
 
         if args.device is not None: 
             extract_net.cuda()
@@ -210,7 +209,7 @@ def train(args):
                     loss = criterion(probs, target)
                     optimizer.zero_grad()
                     loss.backward()
-                    #  clip_grad_norm(extract_net.parameters(), args.max_norm)
+                    clip_grad_norm(extract_net.parameters(), args.max_norm)
                     optimizer.step()
 
                     if global_step % args.print_every == 0:
