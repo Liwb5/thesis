@@ -13,6 +13,7 @@ sys.path.append('./utils')
 
 import torch 
 import torch.nn as nn
+from torch.nn.utils import clip_grad_norm_
 from torch.autograd import Variable
 from Dataset import Document, Dataset
 from Vocab import Vocab
@@ -40,7 +41,7 @@ def evaluate(args, net, vocab, criterion):
 
             probs = extract_net(features, doc_lens)
             loss = criterion(probs, target)
-            total_loss += loss.data[0]
+            total_loss += loss.item()
             #  del loss   # if not apply gradient. then the dynamic graph will stay in free. should delete manually
             batch_num += 1
 
@@ -186,6 +187,7 @@ def train(args):
 
         logging.info('starting training')
         global_step = 0 
+        avg_loss = 0
         for epoch in range(args.epochs):
             train_iter = data_loader.chunked_data_reader('train', data_quota=args.train_example_quota)
             step_in_epoch = 0
@@ -207,14 +209,16 @@ def train(args):
                     probs = extract_net(features, doc_lens)
                     #  logging.debug(probs)
                     loss = criterion(probs, target)
+                    avg_loss += loss.item()
                     optimizer.zero_grad()
                     loss.backward()
-                    clip_grad_norm(extract_net.parameters(), args.max_norm)
+                    clip_grad_norm_(extract_net.parameters(), args.max_norm)
                     optimizer.step()
 
                     if global_step % args.print_every == 0:
                         logging.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f' 
-                                %(epoch, global_step, step_in_epoch, loss.data[0]))
+                                %(epoch, global_step, step_in_epoch, avg_loss/args.print_every))
+                        avg_loss = 0
 
                     if global_step*args.batch_size % args.eval_every == 0:
                         val_loss = evaluate(args, extract_net, vocab, criterion)
