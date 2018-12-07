@@ -63,9 +63,9 @@ def test(args):
         test_iter = data_loader.chunked_data_reader('test')
 
         if args.device is not None:
-            checkpoint = torch.load(args.load_dir)
+            checkpoint = torch.load(args.load_model)
         else:
-            checkpoint = torch.load(args.load_dir, map_location=lambda storage, loc: storage)
+            checkpoint = torch.load(args.load_model, map_location=lambda storage, loc: storage)
 
         # checkpoint['args']['device'] saves the device used as train time
         # if at test time, we are using a CPU, we must override device to None
@@ -277,7 +277,7 @@ if __name__=='__main__':
     parser.add_argument('-device',type=int)    #### mark
 
     # test
-    parser.add_argument('-load_dir',type=str,default='checkpoints/')  #### mark
+    parser.add_argument('-load_model',type=str,default='checkpoints/')  #### mark
     parser.add_argument('-topk',type=int,default=3)
     parser.add_argument('-output_dir',type=str,default='outputs/')
 
