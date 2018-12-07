@@ -11,8 +11,12 @@ class Vocab():
 
         self.PAD_ID = 0
         self.UNK_ID = 1
+        self.SOS_ID = 2
+        self.EOS_ID = 3
         self.PAD_TOKEN = 'PAD_TOKEN'
         self.UNK_TOKEN = 'UNK_TOKEN'
+        self.SOS_TOKEN = '<s>'
+        self.EOS_TOKEN = '<\s>'
         self.word_list = []
         self.word2id = {}
         self.id2word = {}
@@ -66,9 +70,37 @@ class Vocab():
 
         return doc_sent_features, targets, summaries, doc_lens
 
+    def summary_to_features(self, examples, sent_trunc = 100):
+        if not isinstance(examples, list):
+            examples = [examples]
+
+        summaries = []
+        max_sent_len = 0
+        for example in examples:
+            summary = example.summary
+            summary = ' '.join(summary) # join to one sentence
+            words = summary.split(' ')
+            if len(words) > sent_trunc-1:
+                words = words[:sent_trunc]
+            max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
+            summaries.append(words)
+
+        input_features = []
+        label_features = []
+        for summary in summaries:
+            feature = [self.w2i(w) for w in summary] 
+            pad = [self.PAD_ID for _ in range(max_sent_len - len(summary))]
+            input_feature = [self.SOS_ID] + feature + pad  # as input in autoencoder 
+            label_feature = feature + [self.EOS_ID] + pad  # as label in autoencoder
+            input_features.append(input_feature)
+            label_features.append(label_feature)
+
+        input_features = torch.LongTensor(input_features)
+        label_features = torch.FloatTensor(label_features)
+        return input_features, label_features
 
     def add_vocab(self, vocab_file):
-        self.word_list = [self.PAD_TOKEN, self.UNK_TOKEN, '<s>', '<\s>']
+        self.word_list = [self.PAD_TOKEN, self.UNK_TOKEN, self.SOS_TOKEN, self.EOS_TOKEN]
         with open(vocab_file, 'r') as f:
             for line in f:
                 self.word_list.append(line.split()[0]) # only want the word, not the count
@@ -83,7 +115,11 @@ class Vocab():
         print('Loading embeddings ')
         with open(embed_file, 'r') as f:
             word_set = set(self.word_list)
-            embed_matrix = np.zeros(shape=(len(self.word_list), embed_size))
+            eos_embedding = np.random.random((1, embed_size))
+            sos_embedding = np.random.random((1, embed_size))
+            embed_matrix = np.zeros((len(self.word_list), embed_size))
+            embed_matrix[2] = eos_embedding
+            embed_matrix[3] = sos_embedding
 
             count = 0
             for line in f:
@@ -94,8 +130,8 @@ class Vocab():
                     embedding = np.array([float(val) for val in splitLine[1:]])
                     embed_matrix[self.word2id[word]] = embedding
 
-                if count % 10000 == 0:
-                    print('processed %d data' % count)
+                    if count % 10000 == 0:
+                        print('processed %d data' % count)
 
             self.embed_matrix = embed_matrix
             print('%d words out of %d has embeddings in the embed_file' % (count, len(self.word_list)))
