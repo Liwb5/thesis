@@ -58,3 +58,29 @@ class BasicModule(torch.nn.Module):
         sent_input = torch.cat(sent_input, dim=0)
         return sent_input   # (B, max_doc_len, H)
 
+
+    def order(self, inputs, entext_len):
+        """
+        order函数将句子的长度按从大到小排序
+        inputs: B*en_maxLen. a tensor object
+        entext_len: B * 1. the real length of every sentence
+        
+        return:
+        inputs: B * maxLen  tensor
+        entext_len: B * 1  tensor
+        order_ids:  B * 1  tensor
+        """
+        #将entext_len按从大到小排序
+        sorted_len, sort_ids = torch.sort(entext_len, dim = 0, descending=True)
+        
+        sort_ids = Variable(sort_ids).cuda() if self.use_cuda else Variable(sort_ids)
+        
+        inputs = inputs.index_select(0, sort_ids)
+        
+        _, true_order_ids = torch.sort(sort_ids, 0, descending=False)
+        
+        #true_order_ids = Variable(true_order_ids).cuda() if self.use_cuda else Variable(true_order_ids)
+        
+        #排序之后，inputs按照句子长度从大到小排列
+        #true_order_ids是原来batch的顺序，因为后面需要将顺序调回来
+        return inputs, sorted_len, true_order_ids
