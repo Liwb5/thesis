@@ -29,6 +29,27 @@ class Vocab():
         else:
             return self.word2id[self.UNK_TOKEN]
 
+    def i2w(self, key):
+        if key in self.id2word:
+            return self.id2word[key]
+        else:
+            return self.id2word[self.UNK_ID]
+
+    def features_to_tokens(self, features):
+        #  if not isinstance(features[0], list):
+        #      features = [features]
+        features = features.tolist()
+
+        tokens = []
+        for feature in features:
+            token = []
+            for i in range(len(feature)):
+                if feature[i] == self.PAD_ID or i == len(feature)-1:
+                    tokens.append(' '.join(token))
+                    break
+                token.append(self.i2w(feature[i]))
+        return tokens
+
     def docs_to_features(self, examples, sent_trunc = 50, doc_trunc=100):
         sents_list, targets, summaries, doc_lens = [], [], [], []
         if not isinstance(examples,list):
@@ -75,10 +96,12 @@ class Vocab():
             examples = [examples]
 
         summaries = []
+        ground_truth = []
         max_sent_len = 0
         for example in examples:
             summary = example.summary
             summary = ' '.join(summary) # join to one sentence
+            ground_truth.append(summary)
             words = summary.split(' ')
             if len(words) > sent_trunc-1:
                 words = words[:sent_trunc]
@@ -97,7 +120,7 @@ class Vocab():
 
         input_features = torch.LongTensor(input_features)
         label_features = torch.FloatTensor(label_features)
-        return input_features, label_features
+        return input_features, label_features, ground_truth 
 
     def add_vocab(self, vocab_file):
         self.word_list = [self.PAD_TOKEN, self.UNK_TOKEN, self.SOS_TOKEN, self.EOS_TOKEN]

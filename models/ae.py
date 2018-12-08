@@ -3,15 +3,18 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
-import models
 
+import sys
+sys.path.append('../')
 from seq2seq.model import DecoderRNN
 from seq2seq.model import EncoderRNN
 from seq2seq.model import TopKDecoder
+from .rnn import *
+from .BasicModule import BasicModule
 
-class ae(nn.Module):
+class ae(BasicModule):
     def __init__(self, args, embed=None):
-        super(ae, self).__init__()
+        super(ae, self).__init__(args)
 
         self.args = args
         self.model_name = 'ae'
@@ -23,9 +26,9 @@ class ae(nn.Module):
         #      src_embedding = None
         #      tgt_embedding = None
 
-        self.encoder = models.gru_encoder(args, args.tgt_vocab_size, embed)
+        self.encoder = std_encoder(args, args.embed_num, embed)
 
-        self.decoder = DecoderRNN(vocab_size = args.tgt_vocab_size,
+        self.decoder = DecoderRNN(vocab_size = args.embed_num,
                                   max_len = 100,
                                   hidden_size = args.hidden_size*2,
                                   sos_id = 1,
@@ -35,16 +38,17 @@ class ae(nn.Module):
                                   bidirectional = False,
                                   input_dropout_p = 0,
                                   dropout_p = 0,
-                                  use_attention = False)
+                                  use_attention = False,
+                                  embed = embed)
 
         self.cost_func = nn.CrossEntropyLoss()
 
-    def forward(self, x, docs_lens):
+    def forward(self, x):
         """ @x: (N, L). N: sentence number; L: sentence length 
-            @doc_lens: (B, 1). B: batch size (document number)
+            #  @doc_lens: (B, 1). B: batch size (document number)
         """
 
-        encoder_outputs = self.encoder(x, doc_lens) # output: (B, 2*H)
+        encoder_outputs = self.encoder(x) # output: (B, 2*H)
 
         # dec_outputs:(seq_len, B, vocab_size) the probability of every word
         dec_outputs, dec_hidden, ret_dict = self.decoder(inputs = labels,
@@ -62,10 +66,6 @@ class ae(nn.Module):
             @labels: (B, seq_len). every line represent one document. 
         """
         #labels = labels[:,:-1]
-        if self.use_cuda:
-            labels = Variable(labels).long().cuda()
-        else:
-            labels = Variable(labels).long()
         #print(len(dec_outputs))  
         #print(dec_outputs[0].size())
         logits = torch.cat(dec_outputs, 0)#(batch*seq_len, zh_voc)
@@ -78,3 +78,6 @@ class ae(nn.Module):
         
         return loss
 
+
+if __name__=='__main__':
+    print('testing ae.py file')
