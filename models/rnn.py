@@ -2,6 +2,7 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+import torch.nn.functional as F
 from .BasicModule import BasicModule
 
 
@@ -9,10 +10,15 @@ class std_encoder(nn.Module):
     def __init__(self, args, vocab_size, embed=None):
         super(std_encoder, self).__init__()
 
+        self.embedding = nn.Embedding(vocab_size, args.embed_dim, padding_idx=0)
+
         if embed is not None:
-            self.embedding = embed
+            embed = torch.FloatTensor(embed)
+            #  self.embedding.weight.data.copy_(embed)
+            self.embedding = nn.Embedding.from_pretrained(embed)
+            #  self.embedding.weight.requires_grad=True
         else:
-            self.embedding = nn.Embedding(vocab_size, args.embed_dim)
+            self.embedding = nn.Embedding(vocab_size, args.hidden_size, padding_idx = 0)
 
         self.args = args
 

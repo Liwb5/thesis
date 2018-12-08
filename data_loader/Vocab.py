@@ -119,7 +119,7 @@ class Vocab():
             label_features.append(label_feature)
 
         input_features = torch.LongTensor(input_features)
-        label_features = torch.FloatTensor(label_features)
+        label_features = torch.LongTensor(label_features)
         return input_features, label_features, ground_truth 
 
     def add_vocab(self, vocab_file):

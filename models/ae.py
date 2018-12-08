@@ -44,19 +44,18 @@ class ae(BasicModule):
         self.cost_func = nn.CrossEntropyLoss()
 
     def forward(self, x):
-        """ @x: (N, L). N: sentence number; L: sentence length 
-            #  @doc_lens: (B, 1). B: batch size (document number)
+        """ @x: (B, L). 
         """
 
         encoder_outputs = self.encoder(x) # output: (B, 2*H)
 
         # dec_outputs:(seq_len, B, vocab_size) the probability of every word
-        dec_outputs, dec_hidden, ret_dict = self.decoder(inputs = labels,
+        dec_outputs, dec_hidden, ret_dict = self.decoder(inputs = x,
                                                         encoder_outputs = encoder_outputs,
                                                         teacher_forcing_ratio = 1.0)
 
         predicts = ret_dict[self.decoder.KEY_SEQUENCE]
-        predicts = torch.cat(predicts, 1).contigous().data.cpu()
+        predicts = torch.cat(predicts, 1).contiguous().data.cpu()
 
         return dec_outputs, predicts
 
@@ -72,7 +71,7 @@ class ae(BasicModule):
         #print(logits.size())
         #logits = logits.contiguous().view(-1, logits.size(-1))
         #  labels = labels.transpose(0,1).contiguous().view(-1)
-        labels = torch.cat(labels.contiguous(), 0)
+        labels = labels.contiguous().view(-1)
         
         loss = torch.mean(self.cost_func(logits, labels))
         
