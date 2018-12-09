@@ -36,6 +36,8 @@ class Vocab():
             return self.id2word[self.UNK_ID]
 
     def features_to_tokens(self, features):
+        """ @features: (N, L) a list of list sequence. e.g: [[5,6,7,8],[4,9,5,8,9]]
+        """
         if not isinstance(features[0], list):
             features = [features]
         #  features = features.tolist()
@@ -44,10 +46,11 @@ class Vocab():
         for feature in features:
             token = []
             for i in range(len(feature)):
-                if feature[i] == self.PAD_ID or i == len(feature)-1:
-                    tokens.append(' '.join(token))
-                    break
+                #  if feature[i] == self.PAD_ID or i == len(feature)-1:
+                #      tokens.append(' '.join(token))
+                #      break
                 token.append(self.i2w(feature[i]))
+            tokens.append(' '.join(token))
         return tokens
 
     def docs_to_features(self, examples, sent_trunc = 50, doc_trunc=100):
