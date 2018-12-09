@@ -36,9 +36,9 @@ class Vocab():
             return self.id2word[self.UNK_ID]
 
     def features_to_tokens(self, features):
-        #  if not isinstance(features[0], list):
-        #      features = [features]
-        features = features.tolist()
+        if not isinstance(features[0], list):
+            features = [features]
+        #  features = features.tolist()
 
         tokens = []
         for feature in features:
