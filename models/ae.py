@@ -26,7 +26,7 @@ class ae(BasicModule):
         #      src_embedding = None
         #      tgt_embedding = None
 
-        self.encoder = std_encoder(args, args.embed_num, embed)
+        self.encoder = rnn_encoder(args, args.embed_num, embed)
 
         self.decoder = DecoderRNN(vocab_size = args.embed_num,
                                   max_len = 100,
@@ -39,7 +39,8 @@ class ae(BasicModule):
                                   input_dropout_p = 0,
                                   dropout_p = 0,
                                   use_attention = False,
-                                  embed = embed)
+                                  embed = embed, 
+                                  args = args)
 
         self.cost_func = nn.CrossEntropyLoss(weight = args.weights)
 

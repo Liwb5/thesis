@@ -1,5 +1,6 @@
 # coding:utf-8
 import numpy as np
+import logging
 import random
 import pickle
 import json
@@ -113,6 +114,14 @@ class Vocab():
             summaries.append(words)
             sents_len.append(len(words) + 1)
 
+        # 让一个batch中的句子按照长度排序
+        #  logging.debug(['origin summaries: ', summaries])
+        #  logging.debug(['origin sents_len: ', sents_len])
+        summaries = sorted(summaries, key=lambda x: len(x), reverse = True)
+        sents_len = sorted(sents_len, reverse = True)
+        #  logging.debug(['origin summaries: ', summaries])
+        #  logging.debug(['origin sents_len: ', sents_len])
+
         input_features = []
         label_features = []
         for summary in summaries:
@@ -127,6 +136,7 @@ class Vocab():
         label_features = torch.LongTensor(label_features)
         sents_len = torch.LongTensor(sents_len)
         return input_features, label_features, sents_len, ground_truth 
+
 
     def add_vocab(self, vocab_file):
         self.word_list = [self.PAD_TOKEN, self.UNK_TOKEN, self.SOS_TOKEN, self.EOS_TOKEN]

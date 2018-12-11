@@ -43,7 +43,7 @@ def test(args):
             checkpoint['args'].device = None
 
         #  net = getattr(models,checkpoint['args'].model_name)(checkpoint['args'])
-        net = getattr(models, checkpoint['args'].model_name)(checkpoint['args'], vocab.embed_matrix)
+        net = getattr(models, checkpoint['args'].model_name)(checkpoint['args'], embed = None) # vocab.embed_matrix)
         net.load_state_dict(checkpoint['model'])
 
         if args.device is not None: 
@@ -84,7 +84,8 @@ def train(args):
 
     log_file = ''.join((args.log_dir, args.training_purpose, '.log'))
     logging.basicConfig(filename = log_file, filemode = 'w',
-            level=logging.DEBUG, format='%(asctime)s : %(filename)s[line:%(lineno)d] : %(levelname)s:  %(message)s')
+            level=getattr(logging, args.log_level.upper()), 
+            format='%(asctime)s : %(filename)s[line:%(lineno)d] : %(levelname)s:  %(message)s')
 
     try:
         if args.device is not None: 
@@ -111,9 +112,9 @@ def train(args):
         logging.info('args: %s', args)
 
         logging.info('building model')
-        net = getattr(models, args.model_name)(args, vocab.embed_matrix)
+        net = getattr(models, args.model_name)(args, embed = None)
 
-        if args.device is not None: 
+        if args.device is not None:
             net.cuda()
 
         params = filter(lambda p: p.requires_grad, net.parameters())
@@ -135,14 +136,15 @@ def train(args):
                                                                 sent_trunc = args.sent_trunc,) 
 
                     #  logging.debug(summaries)
-                    #  logging.debug(['features size: ', features.size()])
-                    #  logging.debug(['target size: ', target.size()])
+                    #  logging.debug(['features size: ', features])
+                    #  logging.debug(['target size: ', target])
                     #  logging.debug(['sents_len: ', sents_len])
                     #  tokens = vocab.features_to_tokens(features.numpy().tolist())
                     #  logging.debug(tokens)
                     #  tokens = vocab.features_to_tokens(target.numpy().tolist())
                     #  logging.debug(tokens)
-                    time.sleep(5)
+                    if args.log_level == 'debug':
+                        time.sleep(5)
 
                     features, target = Variable(features), Variable(target)
                     if args.device is not None:
@@ -150,7 +152,9 @@ def train(args):
                         target = target.cuda()
 
                     probs, _ = net(features,target)
-                    loss = net.compute_loss(probs, target[:,:-1])
+                    logging.debug(['probs size: ', probs.size()])
+                    logging.debug(['target size: ', target])
+                    loss = net.compute_loss(probs, target[:,1:])
                     avg_loss += loss.item()
                     optimizer.zero_grad()
                     loss.backward()
@@ -162,14 +166,14 @@ def train(args):
                                 %(epoch, global_step, step_in_epoch, avg_loss/args.print_every))
                         avg_loss = 0
 
+                    if global_step*args.batch_size % args.report_every == 0:
+                        logging.info('saving model in %d step' % global_step)
+                        net.save()
+
                     #  if global_step*args.batch_size % args.eval_every == 0:
                     #      val_loss = evaluate(args, net, vocab, criterion)
                     #      logging.info('Epoch: %d, global_batch: %d, Batch ID:%d val_Loss:%f'
                     #              %(epoch, global_step, step_in_epoch, val_loss))
-
-                    if global_step*args.batch_size % args.report_every == 0:
-                        logging.info('saving model in %d step' % global_step)
-                        net.save()
 
     except Exception as e:
         logging.exception(e) # record error
@@ -226,7 +230,7 @@ if __name__=='__main__':
     # option
     parser.add_argument('-training_purpose', type=str, default='first_train')  #### mark
     parser.add_argument('-test',action='store_true')
-    parser.add_argument('-debug', action='store_true', default=False)
+    parser.add_argument('-log_level', type=str, default='info')
 
     args = parser.parse_args()
 
