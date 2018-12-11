@@ -152,8 +152,9 @@ def train(args):
                         target = target.cuda()
 
                     probs, _ = net(features,target)
-                    logging.debug(['probs size: ', probs.size()])
-                    logging.debug(['target size: ', target])
+                    #  tmp = torch.cat(probs, 0)
+                    #  logging.debug(['probs size: ', tmp.size()])
+                    #  logging.debug(['target size: ', target.size()])
                     loss = net.compute_loss(probs, target[:,1:])
                     avg_loss += loss.item()
                     optimizer.zero_grad()
