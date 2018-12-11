@@ -7,7 +7,6 @@ import numpy as np
 import pickle
 import time
 import random
-from tqdm import tqdm
 sys.path.append('./data_loader')
 sys.path.append('./utils')
 
@@ -52,8 +51,8 @@ def test(args):
         net.eval()
 
         for dataset in data_iter:
-            for step, docs in enumerate(BatchDataLoader(dataset, batch_size = 2, shuffle=False)):
-                features, target, summaries = vocab.summary_to_features(docs, 
+            for step, docs in enumerate(BatchDataLoader(dataset, batch_size = args.batch_size, shuffle=False)):
+                features, target, _, summaries = vocab.summary_to_features(docs, 
                                                         sent_trunc = args.sent_trunc)
 
                 features, target = Variable(features), Variable(target)
@@ -61,7 +60,7 @@ def test(args):
                     features = features.cuda()
                     target = target.cuda()
 
-                probs, predicts = net(features)
+                probs, predicts = net(features, target)
                 predicted_tokens = vocab.features_to_tokens(predicts.numpy().tolist())
                 print ('ref: ')
                 print (summaries)
@@ -107,6 +106,8 @@ def train(args):
         args.tgt_vocab_size = vocab.embed_matrix.shape[0]
         args.embed_num = vocab.embed_matrix.shape[0]
         args.embed_dim = vocab.embed_matrix.shape[1]
+        args.weights = torch.ones(args.embed_num)
+        args.weights[vocab.PAD_ID] = 0
         logging.info('args: %s', args)
 
         logging.info('building model')
@@ -130,26 +131,26 @@ def train(args):
                 for step, docs in enumerate(BatchDataLoader(dataset, batch_size = args.batch_size, shuffle=True)):
                     global_step += 1
                     step_in_epoch += 1
-                    features, target, summaries  = vocab.summary_to_features(docs, 
+                    features, target, sents_len, summaries  = vocab.summary_to_features(docs, 
                                                                 sent_trunc = args.sent_trunc,) 
 
                     #  logging.debug(summaries)
-                    #  logging.debug(features)
-                    #  logging.debug(target)
-                    #  tokens = vocab.features_to_tokens(features.numpy())
+                    #  logging.debug(['features size: ', features.size()])
+                    #  logging.debug(['target size: ', target.size()])
+                    #  logging.debug(['sents_len: ', sents_len])
+                    #  tokens = vocab.features_to_tokens(features.numpy().tolist())
                     #  logging.debug(tokens)
-                    #  tokens = vocab.features_to_tokens(target.numpy())
+                    #  tokens = vocab.features_to_tokens(target.numpy().tolist())
                     #  logging.debug(tokens)
-                    #  time.sleep(5)
+                    time.sleep(5)
 
                     features, target = Variable(features), Variable(target)
                     if args.device is not None:
                         features = features.cuda()
                         target = target.cuda()
 
-                    probs, _ = net(features)
-                    #  logging.debug(probs)
-                    loss = net.compute_loss(probs, target)
+                    probs, _ = net(features,target)
+                    loss = net.compute_loss(probs, target[:,:-1])
                     avg_loss += loss.item()
                     optimizer.zero_grad()
                     loss.backward()
@@ -197,7 +198,7 @@ if __name__=='__main__':
     parser.add_argument('-report_every', type=int, default=50000)
     parser.add_argument('-print_every', type=int, default=10)
     parser.add_argument('-eval_every', type=int, default=10000)
-    parser.add_argument('-sent_trunc',type=int,default=50)
+    parser.add_argument('-sent_trunc',type=int,default=100)
     parser.add_argument('-doc_trunc',type=int,default=100)
     parser.add_argument('-max_norm',type=float,default=1.0)
     parser.add_argument('-log_dir', type=str, default='logs/')
@@ -212,6 +213,7 @@ if __name__=='__main__':
     parser.add_argument('-pos_num',type=int,default=100)
     parser.add_argument('-seg_num',type=int,default=10)
     parser.add_argument('-hidden_size',type=int,default=200)            #### mark
+    parser.add_argument('-weights',type=int,default=10)
 
     #device
     parser.add_argument('-device',type=int)    #### mark

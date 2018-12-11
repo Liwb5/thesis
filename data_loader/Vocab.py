@@ -100,6 +100,7 @@ class Vocab():
 
         summaries = []
         ground_truth = []
+        sents_len = []
         max_sent_len = 0
         for example in examples:
             summary = example.summary
@@ -107,9 +108,10 @@ class Vocab():
             ground_truth.append(summary)
             words = summary.split(' ')
             if len(words) > sent_trunc-1:
-                words = words[:sent_trunc]
+                words = words[:sent_trunc-1]
             max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
             summaries.append(words)
+            sents_len.append(len(words) + 1)
 
         input_features = []
         label_features = []
@@ -117,13 +119,14 @@ class Vocab():
             feature = [self.w2i(w) for w in summary] 
             pad = [self.PAD_ID for _ in range(max_sent_len - len(summary))]
             input_feature = [self.SOS_ID] + feature + pad  # as input in autoencoder 
-            label_feature = feature + [self.EOS_ID] + pad  # as label in autoencoder
+            label_feature = [self.SOS_ID] + feature + [self.EOS_ID] + pad  # as label in autoencoder
             input_features.append(input_feature)
             label_features.append(label_feature)
 
         input_features = torch.LongTensor(input_features)
         label_features = torch.LongTensor(label_features)
-        return input_features, label_features, ground_truth 
+        sents_len = torch.LongTensor(sents_len)
+        return input_features, label_features, sents_len, ground_truth 
 
     def add_vocab(self, vocab_file):
         self.word_list = [self.PAD_TOKEN, self.UNK_TOKEN, self.SOS_TOKEN, self.EOS_TOKEN]
