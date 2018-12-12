@@ -70,6 +70,27 @@ def test(args):
     except Exception as e:
         raise
 
+def predict(args, vocab, net):
+    data_loader = PickleReader(args.data_dir)
+    data_iter = data_loader.chunked_data_reader('train', data_quota=args.train_example_quota)
+    net.eval()
+
+    for dataset in data_iter:
+        for step, docs in enumerate(BatchDataLoader(dataset, batch_size = 2, shuffle=False)):
+                features, target, _, summaries = vocab.summary_to_features(docs, 
+                                                        sent_trunc = args.sent_trunc)
+
+                features, target = Variable(features), Variable(target)
+                if args.device is not None:
+                    features = features.cuda()
+                    target = target.cuda()
+
+                probs, predicts = net(features, target)
+                predicted_tokens = vocab.features_to_tokens(predicts.numpy().tolist())
+                logging.info(['ref: ', summaries])
+                logging.info(['hyp: ', predicted_tokens])
+                del features, target, probs, predicts, predicted_tokens
+    net.train()
 
 def train(args):
     args.save_dir = ''.join((args.save_dir, args.training_purpose, '/'))
@@ -175,6 +196,8 @@ def train(args):
                     #      val_loss = evaluate(args, net, vocab, criterion)
                     #      logging.info('Epoch: %d, global_batch: %d, Batch ID:%d val_Loss:%f'
                     #              %(epoch, global_step, step_in_epoch, val_loss))
+
+            predict(args, vocab, net)
 
     except Exception as e:
         logging.exception(e) # record error
