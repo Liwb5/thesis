@@ -72,7 +72,7 @@ def test(args):
 
 def predict(args, vocab, net):
     data_loader = PickleReader(args.data_dir)
-    data_iter = data_loader.chunked_data_reader('train', data_quota=args.train_example_quota)
+    data_iter = data_loader.chunked_data_reader('train', data_quota=10)
     net.eval()
 
     for dataset in data_iter:
@@ -156,7 +156,7 @@ def train(args):
                     features, target, sents_len, summaries  = vocab.summary_to_features(docs, 
                                                                 sent_trunc = args.sent_trunc,) 
 
-                    #  logging.debug(summaries)
+                    #  logging.debug(['ground truth: ', summaries])
                     #  logging.debug(['features size: ', features])
                     #  logging.debug(['target size: ', target])
                     #  logging.debug(['sents_len: ', sents_len])
@@ -172,7 +172,7 @@ def train(args):
                         features = features.cuda()
                         target = target.cuda()
 
-                    probs, _ = net(features,target)
+                    probs, predicts = net(features,target)
                     #  tmp = torch.cat(probs, 0)
                     #  logging.debug(['probs size: ', tmp.size()])
                     #  logging.debug(['target size: ', target.size()])
@@ -192,12 +192,15 @@ def train(args):
                         logging.info('saving model in %d step' % global_step)
                         net.save()
 
-                    #  if global_step*args.batch_size % args.eval_every == 0:
+                    if global_step*args.batch_size % args.eval_every == 0:
+                        predict(args, vocab, net)
+                        #  predicted_tokens = vocab.features_to_tokens(predicts.numpy().tolist())
+                        #  logging.info(['ref: ', summaries])
+                        #  logging.info(['hyp: ', predicted_tokens])
                     #      val_loss = evaluate(args, net, vocab, criterion)
                     #      logging.info('Epoch: %d, global_batch: %d, Batch ID:%d val_Loss:%f'
                     #              %(epoch, global_step, step_in_epoch, val_loss))
 
-            predict(args, vocab, net)
 
     except Exception as e:
         logging.exception(e) # record error
@@ -216,7 +219,7 @@ if __name__=='__main__':
             #  default = './data/dm_data_from_summaRuNNer/finished_dm_data/chunked/',)
     parser.add_argument('-train_example_quota', type=int, default=-1,
                         help='how many train example to train on: -1 means full train data')
-    parser.add_argument('-epochs', type=int, default=100)
+    parser.add_argument('-epochs', type=int, default=10000)
     parser.add_argument('-batch_size', type=int, default=20)      #### mark
     parser.add_argument('-dropout', type=float, default=0.)
     parser.add_argument('-lr', type=float, default=1e-4)
@@ -225,7 +228,7 @@ if __name__=='__main__':
     parser.add_argument('-seed', type=int, default=1667)
     parser.add_argument('-report_every', type=int, default=50000)
     parser.add_argument('-print_every', type=int, default=10)
-    parser.add_argument('-eval_every', type=int, default=10000)
+    parser.add_argument('-eval_every', type=int, default=50000)
     parser.add_argument('-sent_trunc',type=int,default=100)
     parser.add_argument('-doc_trunc',type=int,default=100)
     parser.add_argument('-max_norm',type=float,default=1.0)

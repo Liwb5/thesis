@@ -100,19 +100,17 @@ class Vocab():
             examples = [examples]
 
         summaries = []
-        ground_truth = []
         sents_len = []
         max_sent_len = 0
         for example in examples:
             summary = example.summary
             summary = ' '.join(summary) # join to one sentence
-            ground_truth.append(summary)
             words = summary.split(' ')
-            if len(words) > sent_trunc-1:
-                words = words[:sent_trunc-1]
+            if len(words) > sent_trunc:
+                words = words[:sent_trunc]
             max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
             summaries.append(words)
-            sents_len.append(len(words) + 1)
+            sents_len.append(len(words))
 
         # 让一个batch中的句子按照长度排序
         #  logging.debug(['origin summaries: ', summaries])
@@ -124,10 +122,12 @@ class Vocab():
 
         input_features = []
         label_features = []
+        ground_truth = []
         for summary in summaries:
+            ground_truth.append(' '.join(summary))
             feature = [self.w2i(w) for w in summary] 
             pad = [self.PAD_ID for _ in range(max_sent_len - len(summary))]
-            input_feature = [self.SOS_ID] + feature + pad  # as input in autoencoder 
+            input_feature = feature + pad  # as input in autoencoder 
             label_feature = [self.SOS_ID] + feature + [self.EOS_ID] + pad  # as label in autoencoder
             input_features.append(input_feature)
             label_features.append(label_feature)
