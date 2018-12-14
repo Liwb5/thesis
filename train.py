@@ -15,8 +15,8 @@ def get_instance(module, name, config, *args):
     return getattr(module, config[name]['type'])(*args, **config[name]['args'])
 
 def main(config, resume):
-    print(config)
-    #  train_logger = Logger()
+    #  print(config)
+    train_logger = Logger()
     #
     #  # setup data_loader instances
     #  data_loader = get_instance(module_data, 'data_loader', config)
@@ -58,7 +58,6 @@ if __name__ == '__main__':
     if args.config:
         # load config file
         config = get_config_from_json(args.config)
-        #  config = json.load(open(args.config))
         #  path = os.path.join(config['trainer']['save_dir'], config['name'])
     elif args.resume:
         # load config file from checkpoint, in case new config file is not given.

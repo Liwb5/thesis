@@ -31,8 +31,7 @@ def get_config_from_json(json_file):
 #  def replace_config(new_config, old_config):
 #      replaceable_params = ['epochs', 'n_gpu', 'batch_size', 'print_every', 'report_every']
 
-def process_config(json_file):
-    config, _ = get_config_from_json(json_file)
-    config.summary_dir = os.path.join("../experiments", config.exp_name, "summary/")
-    config.checkpoint_dir = os.path.join("../experiments", config.exp_name, "checkpoint/")
-    return config
+#  def process_config(config):
+#      config['trainer']['log_dir'] = os.path.join(config['trainer']['log_dir'], config['name'], '.log')
+#      config.checkpoint_dir = os.path.join("../experiments", config.exp_name, "checkpoint/")
+#      return config
