@@ -1,0 +1,17 @@
+{
+    "purpose": "first_train",
+    "device": 1,
+
+    "trainer":{
+        "epochs": 100,
+        "save_dir": "checkpoints/",
+        "log_dir": "logs/"
+    },
+
+    "data_loader":{
+    },
+
+    "model": {
+        "model_name": "ae"
+    }
+}
