@@ -3,12 +3,13 @@
     "device": 1,
     "log_level": "debug",
     "seed": 1667,
-
+    "loss": "ce_loss",
 
     "trainer":{
         "epochs": 100,
         "save_dir": "checkpoints/",
         "log_dir": "logs/",
+        "teacher_forcing_ratio": "logs/",
         "output_dir": "outputs/"
     },
 

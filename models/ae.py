@@ -40,35 +40,30 @@ class ae(BaseModel):
                                   use_attention = args.use_attention,
                                   embed = None,
                                   args = args)
-    #
-    #      self.cost_func = nn.CrossEntropyLoss(weight = args.weights)
-    #
-    #  def forward(self, x, target):
-    #      """ @x: (B, L).
-    #      """
-    #
-    #      encoder_outputs, enc_h_n = self.encoder(x)
-    #      #  logging.debug(['the size of enc_h_n: ', enc_h_n.size()])
-    #      #  logging.debug(['the size of encoder_outputs: ', encoder_outputs.size()])
-    #      #  enc_h_n = enc_h_n.transpose(1,2)
-    #      #  enc_h_n = torch.cat(enc_h_n, 0).contiguous().unsqueeze(0).transpose(1,2)
-    #
-    #      # dec_outputs:(seq_len, B, vocab_size) the probability of every word
-    #      dec_outputs, dec_hidden, ret_dict = self.decoder(inputs = target,
-    #                                                      encoder_hidden = enc_h_n,
-    #                                                      encoder_outputs = encoder_outputs,
-    #                                                      teacher_forcing_ratio = 0.9)
-    #
-    #      predicts = ret_dict[self.decoder.KEY_SEQUENCE]
-    #      predicts = torch.cat(predicts, 1).contiguous().data.cpu()
-    #      #  dec_outputs = torch.cat(dec_outputs)
-    #      #  logging.info(['the size of decoder_outputs: ', type(dec_outputs)])
-    #      #  logging.info(['the size of decoder_outputs: ', dec_outputs.size()])
-    #
-    #      return dec_outputs, predicts
-    #      #  return None, None
-    #
-    #
+
+
+    def forward(self, x, target, teacher_forcing_ratio):
+        """ @x: (B, L).
+        """
+
+        encoder_outputs, enc_h_n = self.encoder(x)
+        #  logging.debug(['the size of enc_h_n: ', enc_h_n.size()])
+        #  logging.debug(['the size of encoder_outputs: ', encoder_outputs.size()])
+        #  enc_h_n = enc_h_n.transpose(1,2)
+        #  enc_h_n = torch.cat(enc_h_n, 0).contiguous().unsqueeze(0).transpose(1,2)
+
+        # dec_outputs:(seq_len, B, vocab_size) the probability of every word
+        dec_outputs, dec_hidden, ret_dict = self.decoder(inputs = target,
+                                                        encoder_hidden = enc_h_n,
+                                                        encoder_outputs = encoder_outputs,
+                                                        teacher_forcing_ratio = teacher_forcing_ratio)
+
+        predicts = ret_dict[self.decoder.KEY_SEQUENCE]
+        predicts = torch.cat(predicts, 1).contiguous().data.cpu()
+
+        return dec_outputs, predicts
+
+
     #  def compute_loss(self, dec_outputs, labels):
     #      """ @dec_outputs:(B, seq_len, vocab_size) the probability of every word
     #          @labels: (B, seq_len). every line represent one document.
