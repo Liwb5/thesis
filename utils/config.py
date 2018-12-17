@@ -2,6 +2,7 @@ import yaml
 import json
 import os
 import sys
+from utils.util import make_dir
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -25,13 +26,18 @@ def get_config_from_json(json_file):
     # parse the configurations from the config json file provided
     with open(json_file, 'r') as config_file:
         config = json.load(config_file)
-
+    config = process_config(config)
     return config
 
 #  def replace_config(new_config, old_config):
 #      replaceable_params = ['epochs', 'n_gpu', 'batch_size', 'print_every', 'report_every']
 
-#  def process_config(config):
-#      config['trainer']['log_dir'] = os.path.join(config['trainer']['log_dir'], config['name'], '.log')
-#      config.checkpoint_dir = os.path.join("../experiments", config.exp_name, "checkpoint/")
-#      return config
+def process_config(config):
+    # make some necessary directories to save some important things
+    make_dir(config['trainer']['log_dir'])
+    config['trainer']['log_dir'] = ''.join((config['trainer']['log_dir'], config['task_name'], '.log')) 
+    config['trainer']['save_dir'] = ''.join((config['trainer']['save_dir'], config['task_name'])) 
+    config['trainer']['output_dir'] = ''.join((config['trainer']['output_dir'], config['task_name']))
+    make_dir(config['trainer']['save_dir'])
+    make_dir(config['trainer']['output_dir'])
+    return config
