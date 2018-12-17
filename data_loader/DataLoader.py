@@ -3,8 +3,8 @@ import random
 import pickle
 import os
 import numpy as np
-from Dataset import Document, Dataset
-from Vocab import Vocab
+from data_loader.Dataset import Document, Dataset
+from data_loader.Vocab import Vocab
 
 class BatchDataLoader():
     def __init__(self, dataset, batch_size=1, shuffle=True):

@@ -9,7 +9,7 @@ import torch.nn.utils.rnn as rnn_utils
 
 
 class rnn_encoder(nn.Module):
-    def __init__(self, args, vocab_size, embed=None):
+    def __init__(self, args, embed=None):
         super(rnn_encoder, self).__init__()
 
         if embed is not None:
@@ -19,19 +19,14 @@ class rnn_encoder(nn.Module):
             #  self.embedding = nn.Embedding.from_pretrained(embed, freeze = True)
             #  self.embedding.weight.requires_grad=True
         else:
-            self.embedding = nn.Embedding(vocab_size, args.embed_dim)
+            self.embedding = nn.Embedding(args.vocab_size, args.embed_dim) 
 
         self.args = args
-        self.use_cuda = True if args.device is not None else False
 
-        D = args.embed_dim
-        H = args.hidden_size
-
-        self.RNN = nn.GRU(
-                        input_size = D, 
-                        hidden_size = H, 
+        self.RNN = nn.GRU(input_size = args.embed_dim, 
+                        hidden_size = args.hidden_size, 
                         batch_first = False,
-                        bidirectional = True)
+                        bidirectional = args.bidirectional)
 
     def avg_pool1d(self, x, seq_lens):
         """ @x: (n, l, h).  average pooling in second dimension (l)

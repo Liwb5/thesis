@@ -1,17 +1,37 @@
 {
-    "purpose": "first_train",
+    "task_name": "first_train.1217",
     "device": 1,
+    "log_level": "debug",
+    "seed": 1667,
+
 
     "trainer":{
         "epochs": 100,
         "save_dir": "checkpoints/",
-        "log_dir": "logs/"
+        "log_dir": "logs/",
+        "output_dir": "outputs/"
     },
 
     "data_loader":{
+        "data_dir": "./data/cnn_dailymail_data/finished_dm_data/chunked/",
+        "vocab_file": "./data/cnn_dailymail_data/finished_dm_data/vocab_file.pickle"
     },
 
     "model": {
-        "model_name": "ae"
+        "type": "ae",
+        "args": {
+            "embed_dim": 100,
+            "vocab_size": 200004,
+            "hidden_size": 256,
+            "max_len": 120,
+            "sos_id": 2,
+            "eos_id": 3,
+            "rnn_cell": "gru",
+            "input_dropout_p": 0.0, 
+            "dropout_p": 0.0, 
+            "bidirectional": true,
+            "use_attention": false,
+            "pretrained_embed": "./data/cnn_dailymail_data/finished_dm_data/embed" 
+        }
     }
 }

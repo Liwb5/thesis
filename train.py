@@ -1,29 +1,55 @@
 # coding:utf-8
 import os
+import logging
 import json
 import argparse
+import sys
+import random 
+import numpy as np
+
 import torch
-#  import data_loader.data_loaders as module_data
+import data_loader.DataLoader as module_data
 #  import model.loss as module_loss
 #  import model.metric as module_metric
-#  import model.model as module_arch
+import models
 #  from trainer import Trainer
-#  from utils import Logger
+#  sys.path.append('./data_loader')
+#  from DataLoader import BatchDataLoader, PickleReader
+from utils.logger import Logger
 from utils.config import *
 
+#  def get_instance(module, name, config, *args):
+    #  return getattr(module, config[name]['type'])(*args, **config[name]['args'])
+
 def get_instance(module, name, config, *args):
-    return getattr(module, config[name]['type'])(*args, **config[name]['args'])
+    return getattr(module, config[name]['type'])(config[name]['args'])
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
 
 def main(config, resume):
+    set_seed(config['seed'])
+
+    log_format='%(asctime)s-%(filename)s[line:%(lineno)d]-%(levelname)s: %(message)s'
+    logging.basicConfig(filename = config['trainer']['log_dir'],
+                        filemode = 'w',
+                        level = getattr(logging, config['log_level'].upper()),
+                        format = log_format)
+
     #  print(config)
     train_logger = Logger()
     #
-    #  # setup data_loader instances
+    # setup data_loader instances
     #  data_loader = get_instance(module_data, 'data_loader', config)
+    data_loader = module_data.PickleReader(config['data_loader']['data_dir'])
     #  valid_data_loader = data_loader.split_validation()
     #
     #  # build model architecture
-    #  model = get_instance(module_arch, 'arch', config)
+    model = get_instance(models, 'model', config)
+    model.summary()
     #  print(model)
     #
     #  # get function handles of loss and metrics
