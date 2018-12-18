@@ -22,8 +22,8 @@ class ae(BaseModel):
 
         args = dict_to_namedtuple(args)
         self.args = args
-        logging.debug('model name: %s' % self.__class__.__name__)
-        logging.debug(['args in model: ', self.args])
+        self.logger.debug('model name: %s' % self.__class__.__name__)
+        self.logger.debug(['args in model: ', self.args])
 
         self.encoder = rnn_encoder(args, embed=None)
 

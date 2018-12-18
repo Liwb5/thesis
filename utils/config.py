@@ -1,5 +1,6 @@
 import yaml
 import json
+import datetime
 import os
 import sys
 from utils.util import make_dir
@@ -34,10 +35,11 @@ def get_config_from_json(json_file):
 
 def process_config(config):
     # make some necessary directories to save some important things
+    time_stamp = datetime.datetime.now().strftime('%m%d_%H%M%S')
+    config['trainer']['log_dir'] = ''.join((config['trainer']['log_dir'], config['task_name'], '/')) # , '.%s/' % (time_stamp)))
+    config['trainer']['save_dir'] = ''.join((config['trainer']['save_dir'], config['task_name'], '/')) # , '.%s/' % (time_stamp))) 
+    config['trainer']['output_dir'] = ''.join((config['trainer']['output_dir'], config['task_name'], '/')) # , '.%s/' % (time_stamp)))
     make_dir(config['trainer']['log_dir'])
-    config['trainer']['log_dir'] = ''.join((config['trainer']['log_dir'], config['task_name'], '.log')) 
-    config['trainer']['save_dir'] = ''.join((config['trainer']['save_dir'], config['task_name'])) 
-    config['trainer']['output_dir'] = ''.join((config['trainer']['output_dir'], config['task_name']))
     make_dir(config['trainer']['save_dir'])
     make_dir(config['trainer']['output_dir'])
     return config
