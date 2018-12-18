@@ -10,22 +10,21 @@ import random
 import numpy as np
 
 import torch
-import data_loader.DataLoader as module_data
+from torch.utils.data import DataLoader
+import models
 import models.loss as module_loss
 #  import model.metric as module_metric
-import models
 from trainer import Trainer
 from utils import Logger
 from utils.config import *
-sys.path.append('./data_loader')
-from data_loader.Vocab import Vocab
-from data_loader.Dataset import Document, Dataset
+from data_loader import Vocab
+from data_loader import Dataset
 
-def get_instance(module, name, config, *args):
-    return getattr(module, config[name]['type'])(*args, **config[name]['args'])
+#  def get_instance(module, name, config, *args):
+#      return getattr(module, config[name]['type'])(*args, **config[name]['args'])
 
-def get_instance2(module, name, config):
-    return getattr(module, config[name]['type'])(config[name]['args'])
+#  def get_instance2(module, name, config):
+#      return getattr(module, config[name]['type'])(config[name]['args'])
 
 def set_seed(seed):
     torch.manual_seed(seed)
@@ -46,13 +45,17 @@ def main(config, resume):
     train_logger = Logger()
 
     # setup data_loader instances
-    data_loader = module_data.PickleReader(config['data_loader']['args']['data_dir'])
+    train_data = Dataset(config['data_loader']['train_data'], 
+                        data_quota = config['data_loader']['data_quota'])
+    logging.info('using %d examples to train. ' % config['data_loader']['data_quota'])
+    data_loader = DataLoader(dataset = train_data,
+                            batch_size = config['data_loader']['batch_size'])
 
-    with open(config['data_loader']['args']['vocab_file'], 'rb') as f:
-        vocab = pickle.load(f)
+    vocab = Vocab(**config['vocabulary'], embed=None)
 
     # build model architecture
-    model = get_instance2(models, 'model', config)
+    #  model = get_instance2(models, 'model', config)
+    model = getattr(models, config['model']['type'])(config['model']['args'])
     logging.info(['model infomation: ', model])
 
     # get function handles of loss and metrics
@@ -65,7 +68,7 @@ def main(config, resume):
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = get_instance(torch.optim, 'optimizer', config, trainable_params)
+    optimizer = getattr(torch.optim, config['optimizer']['type'])(trainable_params, **config['optimizer']['args'])
     #  lr_scheduler = get_instance(torch.optim.lr_scheduler, 'lr_scheduler', config, optimizer)
 
     trainer = Trainer(model, loss,  optimizer,

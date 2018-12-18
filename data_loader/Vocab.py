@@ -8,21 +8,26 @@ import torch
 from torch.autograd import Variable
 
 class Vocab():
-    def __init__(self):
+    def __init__(self, vocab_file, doc_trunc=50, sent_trunc=120, split_token='\n', embed=None):
 
+        with open(vocab_file) as f:
+            self.word2id = json.load(f)
+
+        self.id2word = {v:k for k,v in self.word2id.items()}
+        assert len(self.word2id) == len(self.id2word)
         self.PAD_ID = 0
         self.UNK_ID = 1
         self.SOS_ID = 2
         self.EOS_ID = 3
         self.PAD_TOKEN = 'PAD_TOKEN'
         self.UNK_TOKEN = 'UNK_TOKEN'
-        self.SOS_TOKEN = '<s>'
-        self.EOS_TOKEN = '<\s>'
-        self.word_list = []
-        self.word2id = {}
-        self.id2word = {}
-        self.count = 0
-        self.embed_matrix = None
+        self.SOS_TOKEN = 'SOS_TOKEN'
+        self.EOS_TOKEN = 'EOS_TOKEN'
+        self.embedding = embed
+        self.vocab_size = len(self.word2id)
+        self.doc_trunc = doc_trunc
+        self.sent_trunc = sent_trunc
+        self.split_token = split_token
 
     def w2i(self, key):
         if key in self.word2id:
@@ -95,47 +100,54 @@ class Vocab():
 
         return doc_sent_features, targets, summaries, doc_lens
 
-    def summary_to_features(self, examples, sent_trunc = 100):
-        if not isinstance(examples, list):
-            examples = [examples]
-
-        summaries = []
-        sents_len = []
-        max_sent_len = 0
-        for example in examples:
-            summary = example.summary
-            summary = ' '.join(summary) # join to one sentence
-            words = summary.split(' ')
-            if len(words) > sent_trunc:
-                words = words[:sent_trunc]
-            max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
-            summaries.append(words)
-            sents_len.append(len(words))
-
-        # 让一个batch中的句子按照长度排序
-        #  logging.debug(['origin summaries: ', summaries])
-        #  logging.debug(['origin sents_len: ', sents_len])
-        summaries = sorted(summaries, key=lambda x: len(x), reverse = True)
-        sents_len = sorted(sents_len, reverse = True)
-        #  logging.debug(['origin summaries: ', summaries])
-        #  logging.debug(['origin sents_len: ', sents_len])
+    def sents_to_features(self, sents_list, sents_len, max_sent_len):
+        if not isinstance(sents_list, list):
+            sents_list = [sents_list]
 
         input_features = []
         label_features = []
-        ground_truth = []
-        for summary in summaries:
-            ground_truth.append(' '.join(summary))
-            feature = [self.w2i(w) for w in summary] 
-            pad = [self.PAD_ID for _ in range(max_sent_len - len(summary))]
-            input_feature = feature + pad  # as input in autoencoder 
-            label_feature = [self.SOS_ID] + feature + [self.EOS_ID] + pad  # as label in autoencoder
+        for idx, sent in enumerate(sents_list):
+            feature = [self.w2i(w) for w in sent]
+            pad = [self.PAD_ID for _ in range(max_sent_len - sents_len[idx])]
+            input_feature = feature + pad
+            label_feature = [self.SOS_ID] + feature + [self.EOS_ID] + pad
             input_features.append(input_feature)
             label_features.append(label_feature)
+        return input_features, label_features
+
+        
+    def summary_to_features(self, summaries):
+        if not isinstance(summaries, list):
+            summaries = [summaries]
+
+        sents_list = []
+        sents_len = []
+        max_sent_len = 0
+        for summary in summaries:
+            sents = summary.split(self.split_token)
+            summary = ' '.join(sents) # join to one sentence
+            words = summary.split(' ')
+            if len(words) > self.sent_trunc:
+                words = words[:self.sent_trunc]
+            max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
+            sents_list.append(words)
+            sents_len.append(len(words))
+
+        # 让一个batch中的句子按照长度排序
+        #  logging.debug(['origin summaries: ', sents_list])
+        #  logging.debug(['origin sents_len: ', sents_len])
+        sents_list = sorted(sents_list, key=lambda x: len(x), reverse = True)
+        sents_len = sorted(sents_len, reverse = True)
+        #  logging.debug(['origin summaries: ', sents_list])
+        #  logging.debug(['origin sents_len: ', sents_len])
+
+        input_features, label_features = self.sents_to_features(sents_list, sents_len, max_sent_len)
 
         input_features = torch.LongTensor(input_features)
         label_features = torch.LongTensor(label_features)
         sents_len = torch.LongTensor(sents_len)
-        return input_features, label_features, sents_len, ground_truth 
+
+        return input_features, label_features, sents_len
 
 
     def add_vocab(self, vocab_file):
@@ -176,12 +188,5 @@ class Vocab():
             print('%d words out of %d has embeddings in the embed_file' % (count, len(self.word_list)))
 
 
-    def add_vocab_from_summaRuNNer(self, vocab_file):
-        with open(vocab_file) as f:
-            self.word2id = json.load(f)
-
-        self.id2word = {v:k for k , v in self.word2id.items()}
-        assert len(self.id2word) == len(self.word2id)
-
     def add_embed_from_summaRuNNer(self, embed_file):
-        self.embed_matrix = np.load(embed_file)['embedding']
+        self.embedding = np.load(embed_file)['embedding']

@@ -42,12 +42,12 @@ class rnn_encoder(nn.Module):
         output = torch.cat(output).squeeze(2)  
         return output    # (n, h)
 
-    def forward(self, x):
+    def forward(self, x, lengths):
         """ @x: (B, seq_len). 
         """
-        sent_lens = torch.sum(torch.sign(x), dim=1) # (N, 1). the real length of every sentence
+        #  sent_lens = torch.sum(torch.sign(x), dim=1) # (N, 1). the real length of every sentence
         x = self.embedding(x).transpose(0, 1)    # (L, B, E). E: embedding dimension
-        packed = rnn_utils.pack_padded_sequence(x,lengths = list(sent_lens))
+        packed = rnn_utils.pack_padded_sequence(x,lengths = list(lengths))
 
         enc_out, h_n = self.RNN(packed)   # output: (L, B, 2*H) h_n: (num_layer*num_direction, B, H)
         enc_out, _ = rnn_utils.pad_packed_sequence(enc_out)

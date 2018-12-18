@@ -22,8 +22,8 @@ class BaseTrainer:
         if self.device is not None:
             torch.cuda.set_device(config['device'])
             self.model = model.cuda()
+            self.loss = loss.cuda()
 
-        self.loss = loss
         self.metrics = metrics
         self.optimizer = optimizer
         self.train_logger = train_logger
@@ -57,7 +57,6 @@ class BaseTrainer:
             # evaluate model performance according to configured metric, save best checkpoint as model_best
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=None)
-            
 
     def _train_epoch(self, epoch):
         """

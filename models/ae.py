@@ -8,10 +8,7 @@ import sys
 import logging
 sys.path.append('../')
 from seq2seq.models import DecoderRNN
-from seq2seq.models import EncoderRNN
-from seq2seq.models import TopKDecoder
 from .rnn import *
-from .BasicModule import BasicModule
 
 from base.base_model import BaseModel
 from utils.util import *
@@ -22,8 +19,8 @@ class ae(BaseModel):
 
         args = dict_to_namedtuple(args)
         self.args = args
-        self.logger.debug('model name: %s' % self.__class__.__name__)
-        self.logger.debug(['args in model: ', self.args])
+        #  self.logger.debug('model name: %s' % self.__class__.__name__)
+        #  self.logger.debug(['args in model: ', self.args])
 
         self.encoder = rnn_encoder(args, embed=None)
 
@@ -42,11 +39,11 @@ class ae(BaseModel):
                                   args = args)
 
 
-    def forward(self, x, target, teacher_forcing_ratio):
+    def forward(self, x, target, lengths, teacher_forcing_ratio):
         """ @x: (B, L).
         """
 
-        encoder_outputs, enc_h_n = self.encoder(x)
+        encoder_outputs, enc_h_n = self.encoder(x, lengths)
         #  logging.debug(['the size of enc_h_n: ', enc_h_n.size()])
         #  logging.debug(['the size of encoder_outputs: ', encoder_outputs.size()])
         #  enc_h_n = enc_h_n.transpose(1,2)

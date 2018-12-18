@@ -24,14 +24,19 @@
     },
 
     "data_loader":{
-        "type": "PickleReader",
-        "args": {
-            "data_dir": "./data/cnn_dailymail_data/finished_dm_data/chunked/",
-            "vocab_file": "./data/cnn_dailymail_data/finished_dm_data/vocab_file.pickle",
-            "batch_size": 10,
-            "shuffle": true,
-            "train_num": 10000 
-        }
+        "train_data": "./data/dm_data_from_summaRuNNer/origin_data/train.json",
+        "val_data": "./data/dm_data_from_summaRuNNer/origin_data/val.json",
+        "test_data": "./data/dm_data_from_summaRuNNer/origin_data/test.json",
+        "batch_size": 10,
+        "shuffle": true,
+        "data_quota": 10000 
+    },
+
+    "vocabulary": {
+        "vocab_file": "./data/dm_data_from_summaRuNNer/origin_data/w2i.json",
+        "sent_trunc": 100,
+        "doc_trunc": 50,
+        "split_token": "\n"
     },
 
     "lr_scheduler": {
@@ -46,7 +51,7 @@
         "type": "ae",
         "args": {
             "embed_dim": 100,
-            "vocab_size": 200004,
+            "vocab_size": 153826,
             "hidden_size": 256,
             "max_len": 120,
             "sos_id": 2,
