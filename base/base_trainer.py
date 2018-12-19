@@ -1,3 +1,4 @@
+# coding:utf-8
 import os
 import math
 import json
@@ -6,6 +7,7 @@ import datetime
 import torch
 from utils.util import * 
 #  from utils.visualization import WriterTensorboardX
+from tensorboardX import SummaryWriter
 
 
 class BaseTrainer:
@@ -36,6 +38,8 @@ class BaseTrainer:
         self.global_step = 0
 
         # setup visualization writer instance
+        #  writer_save_path = ''.join((self.cfg_trainer['log_dir'], 'tensorboardx.log'))
+        self.writer = SummaryWriter(self.cfg_trainer['log_dir']) # tensorboard 建立的是目录，它会自动产生文件名，不需要手动指定
 
         #  Save configuration file into checkpoint directory:
         config_save_path = os.path.join(self.cfg_trainer['save_dir'], 'config.json')

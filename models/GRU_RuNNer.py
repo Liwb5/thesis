@@ -1,11 +1,10 @@
 # coding:utf-8
-from .BasicModule import BasicModule
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-class GRU_RuNNer(BasicModule):
+class GRU_RuNNer(nn.Module):
     def __init__(self, args, embed=None):
         super(GRU_RuNNer, self).__init__(args)
         self.model_name = 'GRU_RuNNer'

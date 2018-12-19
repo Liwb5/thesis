@@ -1,4 +1,3 @@
-from .BasicModule import BasicModule
 from .GRU_RuNNer import GRU_RuNNer 
 from .ae import ae 
 from .rnn import *

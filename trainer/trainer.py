@@ -92,8 +92,10 @@ class Trainer(BaseTrainer):
             #  self.writer.add_scalar('loss', loss.item())
             total_loss += loss.item()
             if self.global_step % self.config['trainer']['print_every'] == 0:
+                avg_loss = total_loss/self.config['trainer']['print_every']
                 self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f'
-                        %(epoch, self.global_step, step_in_epoch, total_loss/self.config['trainer']['print_every']))
+                        %(epoch, self.global_step, step_in_epoch, avg_loss))
+                self.writer.add_scalar('train/loss', avg_loss, self.global_step)
                 total_loss = 0
         log = {}
         return log

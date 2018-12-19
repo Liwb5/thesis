@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import torch.nn.functional as F
-from .BasicModule import BasicModule
 import torch.nn.utils.rnn as rnn_utils
 
 
