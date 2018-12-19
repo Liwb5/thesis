@@ -84,7 +84,7 @@ class BaseTrainer:
             #  'monitor_best': self.mnt_best,
             'config': self.config
         }
-        filename = os.path.join(self.checkpoint_dir, 'checkpoint-model_{}-epoch{}.pth'.format(model_name, epoch))
+        filename = os.path.join(self.config['trainer']['save_dir'], 'checkpoint-model_{}-epoch{}.pth'.format(model_name, epoch))
         torch.save(state, filename)
         self.logger.info("Saving checkpoint: {} ...".format(filename))
         if save_best:
