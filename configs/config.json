@@ -1,5 +1,5 @@
 {
-    "task_name": "first_train.1217",
+    "task_name": "first_train.1219",
     "device": 0,
     "log_level": "debug",
     "seed": 1667,
@@ -14,7 +14,7 @@
 
     "trainer":{
         "epochs": 100,
-        "save_period": 1,
+        "save_period": 5,
         "print_every": 10,
         "max_norm": 1.0,
         "save_dir": "checkpoints/",
@@ -29,7 +29,7 @@
         "test_data": "./data/dm_data_from_summaRuNNer/origin_data/test.json",
         "batch_size": 10,
         "shuffle": true,
-        "data_quota": 10000 
+        "data_quota": 10000
     },
 
     "vocabulary": {
