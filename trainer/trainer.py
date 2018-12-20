@@ -1,5 +1,7 @@
 # coding:utf-8
 import sys
+import logging
+import math
 import numpy as np
 import torch
 from torchvision.utils import make_grid
@@ -27,12 +29,24 @@ class Trainer(BaseTrainer):
         self.max_norm = config['trainer']['max_norm']
         #  self.log_step = int(np.sqrt(data_loader.batch_size))
 
-    #  def _eval_metrics(self, output, target):
-    #      acc_metrics = np.zeros(len(self.metrics))
-    #      for i, metric in enumerate(self.metrics):
-    #          acc_metrics[i] += metric(output, target)
-    #          self.writer.add_scalar(f'{metric.__name__}', acc_metrics[i])
-    #      return acc_metrics
+    def _eval_metrics(self, predicts, reference):
+        hypothesis = self.vocab.features_to_tokens(predicts.numpy().tolist())
+        results = self.metrics(hypothesis, reference)
+        return results
+        
+    #  def predict(self, predicts, target):
+    #      """
+    #      @ target: Varialbe, (B, L)
+    #      """
+    #      predicted_tokens = self.vocab.features_to_tokens(predicts.numpy().tolist())
+    #      target_tokens = self.vocab.features_to_tokens(target.data.cpu().numpy().tolist())
+    #      self.logger.info(['hyp: ', predicted_tokens])
+    #      self.logger.info(['ref: ', target_tokens])
+
+    def _update_tfr(self):
+        tfr = max(math.exp(-(self.global_step)/200000-0.1), 0.5)
+        #  tfr = self.config['trainer']['teacher_forcing_ratio'] - self.global_step/len(self.data_loader)
+        return tfr 
 
     def _compute_loss(self, predicts, labels):
         """ @predicts:(B, seq_len, vocab_size) 
@@ -71,7 +85,7 @@ class Trainer(BaseTrainer):
         for step, dataset in enumerate(self.data_loader):
             self.global_step += 1
             step_in_epoch += 1
-            features, target, sents_len = self.vocab.summary_to_features(dataset['summaries'])
+            features, target, sents_len, reference = self.vocab.summary_to_features(dataset['summaries'])
             features, target, sents_len  = Variable(features), Variable(target), Variable(sents_len)
             if self.device is not None:
                 features = features.cuda()
@@ -79,24 +93,28 @@ class Trainer(BaseTrainer):
                 sents_len = sents_len.cuda()
 
             self.optimizer.zero_grad()
-            #  tfr = self._update_teacher_forcing_ratio(self.global_step)
-            tfr = 0.9
+            tfr = self._update_tfr()
+            self.writer.add_scalar('train/tfr', tfr, self.global_step)
             probs, predicts = self.model(features, target, sents_len, tfr)
             loss = self._compute_loss(probs, target[:,1:])
             loss.backward()
             if self.max_norm is not None:
                 clip_grad_norm_(self.model.parameters(), self.max_norm)
             self.optimizer.step()
-
-            #  self.writer.set_step((epoch - 1) * len(self.data_loader) + batch_idx)
-            #  self.writer.add_scalar('loss', loss.item())
             total_loss += loss.item()
+
             if self.global_step % self.config['trainer']['print_every'] == 0:
                 avg_loss = total_loss/self.config['trainer']['print_every']
                 self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f'
                         %(epoch, self.global_step, step_in_epoch, avg_loss))
                 self.writer.add_scalar('train/loss', avg_loss, self.global_step)
                 total_loss = 0
+
+            if self.global_step * self.config['data_loader']['batch_size'] % self.config['trainer']['eval_every']== 0:
+                hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
+                self.logger.info(['hyp: ', hyp])
+                self.logger.info(['ref: ', reference])
+
         log = {}
         return log
 
@@ -109,24 +127,44 @@ class Trainer(BaseTrainer):
         Note:
             The validation metrics in log must have the key 'val_metrics'.
         """
-        raise NotImplementedError
-        #  self.model.eval()
-        #  total_val_loss = 0
-        #  total_val_metrics = np.zeros(len(self.metrics))
-        #  with torch.no_grad():
-        #      for batch_idx, (data, target) in enumerate(self.valid_data_loader):
-        #          data, target = data.to(self.device), target.to(self.device)
-        #
-        #          output = self.model(data)
-        #          loss = self.loss(output, target)
-        #
-        #          self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
-        #          self.writer.add_scalar('loss', loss.item())
-        #          total_val_loss += loss.item()
-        #          total_val_metrics += self._eval_metrics(output, target)
-        #          self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
-        #
-        #  return {
-        #      'val_loss': total_val_loss / len(self.valid_data_loader),
-        #      'val_metrics': (total_val_metrics / len(self.valid_data_loader)).tolist()
-        #  }
+        #  raise NotImplementedError
+        self.model.eval()
+        total_val_loss = 0
+        val_metrics = []
+        METRICS = ["rouge-1", "rouge-2", "rouge-l"]
+        STATS = ["f", "p", "r"]   
+        final_val_metrics = {m:{s: 0.0 for s in STATS} for m in METRICS}
+        with torch.no_grad():
+            for step, dataset in enumerate(self.valid_data_loader):
+                features, target, sents_len, reference = self.vocab.summary_to_features(dataset['summaries'])
+                features, target, sents_len  = Variable(features), Variable(target), Variable(sents_len)
+                if self.device is not None:
+                    features = features.cuda()
+                    target = target.cuda()
+                    sents_len = sents_len.cuda()
+
+                probs, predicts = self.model(features, target, sents_len, teacher_forcing_ratio=0)
+                loss = self._compute_loss(probs, target[:,1:])
+                total_val_loss += loss.item()
+                val_metrics.append(self._eval_metrics(predicts, reference))
+
+                if step*self.config['data_loader']['batch_size'] % self.config['trainer']['val_eval_every']== 0:
+                    hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
+                    self.logger.info(['hyp: ', hyp])
+                    self.logger.info(['ref: ', reference])
+
+
+            for i in range(len(val_metrics)):
+                for m in METRICS:
+                    final_val_metrics[m] = {s: val_metrics[i][m][s] + final_val_metrics[m][s] for s in STATS}
+            final_val_metrics = {m: {s: final_val_metrics[m][s] / len(val_metrics) for s in STATS}
+                                for m in METRICS}
+        self.logger.info(['finished val epoch.'])
+        self.logger.info(['val_loss:', total_val_loss / step])
+        self.logger.info(['val_metrics:', final_val_metrics])
+
+        self.model.train()
+        return {
+            'val_loss': total_val_loss / step,
+            'val_metrics': final_val_metrics
+        }

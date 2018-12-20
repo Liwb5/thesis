@@ -106,6 +106,7 @@ class Vocab():
 
         input_features = []
         label_features = []
+        reference = []
         for idx, sent in enumerate(sents_list):
             feature = [self.w2i(w) for w in sent]
             pad = [self.PAD_ID for _ in range(max_sent_len - sents_len[idx])]
@@ -113,7 +114,8 @@ class Vocab():
             label_feature = [self.SOS_ID] + feature + [self.EOS_ID] + pad
             input_features.append(input_feature)
             label_features.append(label_feature)
-        return input_features, label_features
+            reference.append(' '.join(sent))
+        return input_features, label_features, reference
 
         
     def summary_to_features(self, summaries):
@@ -141,13 +143,13 @@ class Vocab():
         #  logging.debug(['origin summaries: ', sents_list])
         #  logging.debug(['origin sents_len: ', sents_len])
 
-        input_features, label_features = self.sents_to_features(sents_list, sents_len, max_sent_len)
+        input_features, label_features, reference = self.sents_to_features(sents_list, sents_len, max_sent_len)
 
         input_features = torch.LongTensor(input_features)
         label_features = torch.LongTensor(label_features)
         sents_len = torch.LongTensor(sents_len)
 
-        return input_features, label_features, sents_len
+        return input_features, label_features, sents_len, reference
 
 
     def add_vocab(self, vocab_file):

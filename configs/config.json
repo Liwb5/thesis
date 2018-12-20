@@ -1,9 +1,10 @@
 {
-    "task_name": "first_train.1219",
+    "task_name": "debug.1.1220",
     "device": 0,
     "log_level": "debug",
     "seed": 1667,
     "loss": "ce_loss",
+    "metrics": "rouge_metric",
 
     "optimizer": {
         "type": "Adam",
@@ -14,12 +15,14 @@
 
     "trainer":{
         "epochs": 100,
-        "save_period": 5,
+        "save_period": 500,
         "print_every": 10,
+        "eval_every": 10000,
+        "val_eval_every": 100,
         "max_norm": 1.0,
         "save_dir": "checkpoints/",
         "log_dir": "logs/",
-        "teacher_forcing_ratio": "logs/",
+        "teacher_forcing_ratio": 0.95,
         "output_dir": "outputs/"
     },
 
@@ -29,6 +32,7 @@
         "test_data": "./data/dm_data_from_summaRuNNer/origin_data/test.json",
         "batch_size": 10,
         "shuffle": true,
+        "val_data_quota": 100,
         "data_quota": 10000
     },
 

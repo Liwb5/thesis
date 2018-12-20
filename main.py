@@ -13,7 +13,7 @@ import torch
 from torch.utils.data import DataLoader
 import models
 import models.loss as module_loss
-#  import model.metric as module_metric
+import models.metrics as module_metrics
 from trainer import Trainer
 from utils import Logger
 from utils.config import *
@@ -47,8 +47,14 @@ def main(config, resume):
     # setup data_loader instances
     train_data = Dataset(config['data_loader']['train_data'], 
                         data_quota = config['data_loader']['data_quota'])
-    logging.info('using %d examples to train. ' % config['data_loader']['data_quota'])
+    logging.info('using %d examples to train. ' % len(train_data))
     data_loader = DataLoader(dataset = train_data,
+                            batch_size = config['data_loader']['batch_size'])
+
+    val_data = Dataset(config['data_loader']['val_data'], 
+                        data_quota=config['data_loader']['val_data_quota'])
+    logging.info('using %d examples to val. ' % len(val_data))
+    valid_data_loader = DataLoader(dataset = val_data,
                             batch_size = config['data_loader']['batch_size'])
 
     vocab = Vocab(**config['vocabulary'], embed=None)
@@ -63,7 +69,7 @@ def main(config, resume):
     weights[vocab.PAD_ID] = 0
     loss = getattr(module_loss, config['loss'])(weights)
 
-    #  metrics = [getattr(module_metric, met) for met in config['metrics']]
+    metrics = getattr(module_metrics, config['metrics']) 
 
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
@@ -75,8 +81,8 @@ def main(config, resume):
                       resume=resume,
                       config=config,
                       data_loader=data_loader,
-                      valid_data_loader=None,
-                      metrics=None,
+                      valid_data_loader=valid_data_loader,
+                      metrics=metrics,
                       lr_scheduler=None, #lr_scheduler,
                       train_logger=train_logger,
                       vocab = vocab)
