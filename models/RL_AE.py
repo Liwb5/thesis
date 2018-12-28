@@ -15,7 +15,7 @@ class RL_AE(BaseModel):
     def __init__(self, args, eval_model=None):
         super(RL_AE, self).__init__()
 
-        args = dict_name_tuple(args)
+        args = dict_to_namedtuple(args)
         self.args = args
 
         self.docs_encoder = stack_encoder(args, embed=None)

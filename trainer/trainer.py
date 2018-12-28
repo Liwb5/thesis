@@ -8,6 +8,7 @@ from torchvision.utils import make_grid
 from base import BaseTrainer
 from torch.autograd import Variable
 from torch.nn.utils import clip_grad_norm_
+from pprint import pprint, pformat
 
 
 class Trainer(BaseTrainer):
@@ -87,12 +88,16 @@ class Trainer(BaseTrainer):
             step_in_epoch += 1
             #  features, target, sents_len, reference = self.vocab.summary_to_features(dataset['summaries'])
             docs_features, doc_lens, docs_tokens, \
-                    sum_features, sum_target, sum_word_lens, \
+                    sum_features, sum_target, sum_word_lens, sum_ref, \
                     labels, label_lens = self.vocab.data_to_features(dataset)
 
             docs_features, doc_lens = Variable(docs_features), Variable(doc_lens) 
             sum_features, sum_word_lens, sum_target = Variable(sum_features), Variable(sum_word_lens), Variable(sum_target) 
             labels, label_lens = Variable(labels), Variable(label_lens) 
+            self.logger.debug(pformat(['docs_features: ', docs_features.data.numpy()]))
+            self.logger.debug(pformat(['docs_tokens: ', docs_tokens]))
+            self.logger.debug(['doc_lens: ', doc_lens])
+            self.logger.debug(pformat(['sum_features: ', sum_features.data.numpy()]))
             if self.device is not None:
                 docs_features = docs_features.cuda()
                 doc_lens = doc_lens.cuda()
@@ -102,28 +107,28 @@ class Trainer(BaseTrainer):
                 labels = labels.cuda()
                 label_lens = label_lens.cuda()
 
-            self.optimizer.zero_grad()
-            tfr = self._update_tfr()
-            self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            probs, predicts = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
-            loss = self._compute_loss(probs, target[:,1:])
-            loss.backward()
-            if self.max_norm is not None:
-                clip_grad_norm_(self.model.parameters(), self.max_norm)
-            self.optimizer.step()
-            total_loss += loss.item()
-
-            if self.global_step % self.config['trainer']['print_every'] == 0:
-                avg_loss = total_loss/self.config['trainer']['print_every']
-                self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f'
-                        %(epoch, self.global_step, step_in_epoch, avg_loss))
-                self.writer.add_scalar('train/loss', avg_loss, self.global_step)
-                total_loss = 0
-
-            if self.global_step * self.config['data_loader']['batch_size'] % self.config['trainer']['eval_every']== 0:
-                hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
-                self.logger.info(['hyp: ', hyp])
-                self.logger.info(['ref: ', reference])
+            #  self.optimizer.zero_grad()
+            #  tfr = self._update_tfr()
+            #  self.writer.add_scalar('train/tfr', tfr, self.global_step)
+            #  probs, predicts = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
+            #  loss = self._compute_loss(probs, target[:,1:])
+            #  loss.backward()
+            #  if self.max_norm is not None:
+            #      clip_grad_norm_(self.model.parameters(), self.max_norm)
+            #  self.optimizer.step()
+            #  total_loss += loss.item()
+            #
+            #  if self.global_step % self.config['trainer']['print_every'] == 0:
+            #      avg_loss = total_loss/self.config['trainer']['print_every']
+            #      self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f'
+            #              %(epoch, self.global_step, step_in_epoch, avg_loss))
+            #      self.writer.add_scalar('train/loss', avg_loss, self.global_step)
+            #      total_loss = 0
+            #
+            #  if self.global_step * self.config['data_loader']['batch_size'] % self.config['trainer']['eval_every']== 0:
+            #      hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
+            #      self.logger.info(['hyp: ', hyp])
+            #      self.logger.info(['ref: ', reference])
 
         log = {}
         return log

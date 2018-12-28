@@ -66,7 +66,7 @@ class Vocab():
         docs_features, sents_list, doc_lens = self.docs_to_features(docs)
         summaries_features, summaries_target, summaries_lens, reference = self.summary_to_features(summaries)
         labels, labels_lens = self.process_labels(labels)
-        return docs_features, sents_list, doc_lens, summaries_features, summaries_target, summaries_lens, reference, labels, labels_lens
+        return docs_features, doc_lens, sents_list, summaries_features, summaries_target, summaries_lens, reference, labels, labels_lens
 
     def process_labels(self, labels):
         if not isinstance(labels,list):
@@ -89,6 +89,9 @@ class Vocab():
         for target in targets:
             feature = target + [self.PAD_ID for _ in range(max_len-len(target))]
             res.append(feature)
+
+        res = torch.LongTensor(res)
+        labels_lens = torch.LongTensor(labels_lens)
 
         return res, labels_lens
 
@@ -128,6 +131,7 @@ class Vocab():
         #      doc_sent_features.append(features[doc_lens[i]:doc_lens[i+1]])
 
         doc_sent_features = torch.LongTensor(features)
+        doc_lens = torch.LongTensor(doc_lens)
 
         # batch_sents: [['i', 'am', 'a', 'student'],['i', 'am', 'a', 'student']]
         return doc_sent_features, batch_sents, doc_lens

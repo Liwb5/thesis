@@ -56,6 +56,7 @@ class BaseTrainer:
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
 
+            val_result = {}
             if self.do_validation:
                 val_result = self._valid_epoch(epoch)
 

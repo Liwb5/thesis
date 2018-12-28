@@ -1,5 +1,5 @@
 {
-    "task_name": "debug.1.1220",
+    "task_name": "debug.1.1228",
     "device": 0,
     "log_level": "debug",
     "seed": 1667,
@@ -14,7 +14,7 @@
     },
 
     "trainer":{
-        "epochs": 1000,
+        "epochs": 1,
         "save_period": 50000,
         "print_every": 10,
         "eval_every": 1000000,
@@ -27,13 +27,13 @@
     },
 
     "data_loader":{
-        "train_data": "./data/dm_data_from_summaRuNNer/origin_data/train.json",
+        "train_data": "./data/dm_data_from_summaRuNNer/origin_data/fake_data.json",
         "val_data": "./data/dm_data_from_summaRuNNer/origin_data/val.json",
         "test_data": "./data/dm_data_from_summaRuNNer/origin_data/test.json",
-        "batch_size": 10,
-        "shuffle": true,
+        "batch_size": 2,
+        "shuffle": false,
         "val_data_quota": 100,
-        "data_quota": 100
+        "data_quota": -1
     },
 
     "vocabulary": {
@@ -52,11 +52,11 @@
     },
 
     "model": {
-        "type": "ae",
+        "type": "RL_AE",
         "args": {
-            "embed_dim": 100,
+            "embed_dim": 3,
             "vocab_size": 153826,
-            "hidden_size": 256,
+            "hidden_size": 4,
             "max_len": 120,
             "sos_id": 2,
             "eos_id": 3,
@@ -64,7 +64,7 @@
             "input_dropout_p": 0.0, 
             "dropout_p": 0.0, 
             "bidirectional": true,
-            "use_attention": false,
+            "use_attention": true,
             "pretrained_embed": "./data/cnn_dailymail_data/finished_dm_data/embed" 
         }
     }

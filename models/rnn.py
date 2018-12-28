@@ -134,7 +134,7 @@ class stack_encoder(nn.Module):
         # sent_out: (B, seq_len, 2H)
         return sent_out, docs, x  # x 是每个句子的表示，用于decoder的时候索引
 
-def pn_decoder(nn.Module):
+class pn_decoder(nn.Module):
     """
     Decoder model for Pointer-Net
     """
@@ -144,6 +144,7 @@ def pn_decoder(nn.Module):
             input_dropout_p=0, dropout_p=0, use_attention=False,
             embed=None, args = None, eval_model=None, max_dec_len=3):
 
+        super(pn_decoder, self).__init__()
         self.bidirectional_encoder = bidirectional
 
         self.vocab_size = vocab_size
