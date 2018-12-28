@@ -85,17 +85,27 @@ class Trainer(BaseTrainer):
         for step, dataset in enumerate(self.data_loader):
             self.global_step += 1
             step_in_epoch += 1
-            features, target, sents_len, reference = self.vocab.summary_to_features(dataset['summaries'])
-            features, target, sents_len  = Variable(features), Variable(target), Variable(sents_len)
+            #  features, target, sents_len, reference = self.vocab.summary_to_features(dataset['summaries'])
+            docs_features, doc_lens, docs_tokens, \
+                    sum_features, sum_target, sum_word_lens, \
+                    labels, label_lens = self.vocab.data_to_features(dataset)
+
+            docs_features, doc_lens = Variable(docs_features), Variable(doc_lens) 
+            sum_features, sum_word_lens, sum_target = Variable(sum_features), Variable(sum_word_lens), Variable(sum_target) 
+            labels, label_lens = Variable(labels), Variable(label_lens) 
             if self.device is not None:
-                features = features.cuda()
-                target = target.cuda()
-                sents_len = sents_len.cuda()
+                docs_features = docs_features.cuda()
+                doc_lens = doc_lens.cuda()
+                sum_features = sum_features.cuda()
+                sum_target = sum_target.cuda()
+                sum_word_lens = sum_word_lens.cuda()
+                labels = labels.cuda()
+                label_lens = label_lens.cuda()
 
             self.optimizer.zero_grad()
             tfr = self._update_tfr()
             self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            probs, predicts = self.model(features, target, sents_len, tfr)
+            probs, predicts = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
             loss = self._compute_loss(probs, target[:,1:])
             loss.backward()
             if self.max_norm is not None:

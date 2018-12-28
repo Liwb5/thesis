@@ -54,8 +54,9 @@ def main(config, resume):
     val_data = Dataset(config['data_loader']['val_data'], 
                         data_quota=config['data_loader']['val_data_quota'])
     logging.info('using %d examples to val. ' % len(val_data))
-    valid_data_loader = DataLoader(dataset = val_data,
-                            batch_size = config['data_loader']['batch_size'])
+    valid_data_loader = None
+    #  valid_data_loader = DataLoader(dataset = val_data,
+    #                          batch_size = config['data_loader']['batch_size'])
 
     vocab = Vocab(**config['vocabulary'], embed=None)
 
