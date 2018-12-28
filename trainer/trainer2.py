@@ -105,7 +105,7 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
             tfr = self._update_tfr()
             self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            probs, predicts = self.model(features, target, sents_len, tfr)
+            probs, predicts = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
             loss = self._compute_loss(probs, target[:,1:])
             loss.backward()
             if self.max_norm is not None:

@@ -131,6 +131,7 @@ class stack_encoder(nn.Module):
         sent_out = self.sent_RNN(x)[0]
         docs = self.max_pool1d(sent_out,doc_lens)                                # (B,2*H)
 
+        # sent_out: (B, seq_len, 2H)
         return sent_out, docs, x  # x 是每个句子的表示，用于decoder的时候索引
 
 def pn_decoder(nn.Module):
@@ -141,7 +142,7 @@ def pn_decoder(nn.Module):
             sos_id, eos_id,
             n_layers=1, rnn_cell='gru', bidirectional=False,
             input_dropout_p=0, dropout_p=0, use_attention=False,
-            embed=None, args = None, eval_model=None):
+            embed=None, args = None, eval_model=None, max_dec_len=3):
 
         self.bidirectional_encoder = bidirectional
 
@@ -155,6 +156,7 @@ def pn_decoder(nn.Module):
         self.sos_id = sos_id
         self.eval_model = eval_model
         self.args = args
+        self.max_dec_len = max_dec_len
 
         self.init_input = None
 
@@ -191,13 +193,14 @@ def pn_decoder(nn.Module):
     def forward(self, inputs, decoder_input, hidden, context, docs_lens):
         """
         Args:
-            inputs(B, labels_len, hidden_size): labels，用于监督学习的时候作为输入
-            decoder_input(B, hidden_size): 解码器的representation，用于表示整篇文档,作为decoder的初始hidden_state
+            inputs(B, labels_len, hidden_size): sentence embedding, 每一步的decoder的输入从这里选择 
+            decoder_input(B, hidden_size): 初始decoder的输入，一般是0 
+            hidden(B, hidden_size): 解码器的representation，用于表示整篇文档,作为decoder的初始hidden_state
             context(B, seq_len, hidden_size): 编码器每个step的hidden_state，用于attention
             docs_lens(B, 1): 每篇文档的句子数量, 用于mask padding index
         """
-        batch_size = inputs.size(0)
-        input_length = inputs.size(1)
+        batch_size = context.size(0)
+        input_length = context.size(1)
         
         mask = self._init_mask(docs_lens)  
         self.att.init_inf(mask.size())   
@@ -228,7 +231,7 @@ def pn_decoder(nn.Module):
             # h_t(B, hidden_size); alpha(B, seq_len)
             return h_t, alpha 
 
-        for _ in range(input_length):
+        for _ in range(min(self.max_dec_len, input_length)):
             hidden, outs = step(decoder_input, hidden)
 
             # Masking selected inputs
@@ -236,7 +239,10 @@ def pn_decoder(nn.Module):
 
             # Get maximum probabilities and indices
             # TODO e-greedy sample 
+            # max_probs: (B, 1) indices: (B, 1) 
             max_probs, indices = masked_outs.max(1)
+
+            # runner 每一行都是从0,1,2,3递增，one_hot_pointers是为了得到当前step所选择的对应位置
             one_hot_pointers = (runner == indices.unsqueeze(1).expand(-1, outs.size()[1])).float()
 
             # Update mask to ignore seen indices
@@ -249,8 +255,8 @@ def pn_decoder(nn.Module):
             outputs.append(outs.unsqueeze(0))
             pointers.append(indices.unsqueeze(1))
 
-        outputs = torch.cat(outputs).permute(1, 0, 2)  #(B, labels_lens, seq_len)
-        pointers = torch.cat(pointers, 1) # (B, labels_lens)
+        outputs = torch.cat(outputs).permute(1, 0, 2)  #(B, max_dec_len, seq_len)
+        pointers = torch.cat(pointers, 1) # (B, max_dec_len)
 
         return outputs, pointers, hidden
             

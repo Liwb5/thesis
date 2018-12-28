@@ -58,6 +58,7 @@ class BaseTrainer:
 
             if self.do_validation:
                 val_result = self._valid_epoch(epoch)
+
             # save logged informations into log dict
             log = {'epoch': epoch, **val_result}
             # evaluate model performance according to configured metric, save best checkpoint as model_best
