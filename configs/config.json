@@ -14,15 +14,15 @@
     },
 
     "trainer":{
-        "epochs": 100,
-        "save_period": 500,
+        "epochs": 1000,
+        "save_period": 50000,
         "print_every": 10,
-        "eval_every": 10000,
+        "eval_every": 1000000,
         "val_eval_every": 100,
         "max_norm": 1.0,
         "save_dir": "checkpoints/",
         "log_dir": "logs/",
-        "teacher_forcing_ratio": 0.95,
+        "teacher_forcing_ratio": 0.9,
         "output_dir": "outputs/"
     },
 
@@ -33,7 +33,7 @@
         "batch_size": 10,
         "shuffle": true,
         "val_data_quota": 100,
-        "data_quota": 10000
+        "data_quota": 100
     },
 
     "vocabulary": {

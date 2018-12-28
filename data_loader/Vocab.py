@@ -59,28 +59,60 @@ class Vocab():
             tokens.append(' '.join(token))
         return tokens
 
-    def docs_to_features(self, examples, sent_trunc = 50, doc_trunc=100):
-        sents_list, targets, summaries, doc_lens = [], [], [], []
-        if not isinstance(examples,list):
-            examples = [examples]
+    def data_to_features(self, data):
+        docs = data['doc']
+        summaries = data['summaries']
+        labels = data['labels']
+        docs_features, sents_list, doc_lens = self.docs_to_features(docs)
+        summaries_features, summaries_target, summaries_lens, reference = self.summary_to_features(summaries)
+        labels, labels_lens = self.process_labels(labels)
+        return docs_features, sents_list, doc_lens, summaries_features, summaries_target, summaries_lens, reference, labels, labels_lens
+
+    def process_labels(self, labels):
+        if not isinstance(labels,list):
+            labels = [labels]
+
+        targets = []
+        max_len = 0
+        labels_lens = []
+        for label in labels:
+            label = label.split(self.split_token)
+            target = []
+            for i, key in enumerate(label):
+                if key == '1':
+                    target.append(i)
+            max_len = max(max_len, len(target))
+            labels_lens.append(len(target))
+            targets.append(target)
+
+        res = []
+        for target in targets:
+            feature = target + [self.PAD_ID for _ in range(max_len-len(target))]
+            res.append(feature)
+
+        return res, labels_lens
+
+    def docs_to_features(self, docs):
+        if not isinstance(docs,list):
+            docs = [docs]
 
         # truncate document 
-        for example in examples:
-            max_sent_num = min(doc_trunc, len(example.content))
-            doc = example.content[:max_sent_num]
-            label = example.label[:max_sent_num]
-            sents_list += doc # here we add different document's sentences in the same list
-            targets += label
-            doc_lens.append(len(doc)) # doc_lens to record the sentences number of every document
-            summaries.append(example.summary)
+        sents_list = []
+        doc_lens = []
+        for doc in docs:
+            sents = doc.split(self.split_token)
+            max_sent_num = min(self.doc_trunc, len(sents))
+            sents = sents[:max_sent_num]
+            sents_list += sents  # here we add different document's sentences in the same list
+            doc_lens.append(max_sent_num) # doc_lens to record the sentences number of every document
 
         # trunc and pad sentence
         max_sent_len = 0
         batch_sents = []
         for sent in sents_list:
             words = sent.split()
-            if len(words) > sent_trunc:
-                words = words[:sent_trunc]
+            if len(words) > self.sent_trunc:
+                words = words[:self.sent_trunc]
             max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
             batch_sents.append(words)
 
@@ -96,9 +128,9 @@ class Vocab():
         #      doc_sent_features.append(features[doc_lens[i]:doc_lens[i+1]])
 
         doc_sent_features = torch.LongTensor(features)
-        targets = torch.FloatTensor(targets)
 
-        return doc_sent_features, targets, summaries, doc_lens
+        # batch_sents: [['i', 'am', 'a', 'student'],['i', 'am', 'a', 'student']]
+        return doc_sent_features, batch_sents, doc_lens
 
     def sents_to_features(self, sents_list, sents_len, max_sent_len):
         if not isinstance(sents_list, list):
@@ -138,8 +170,8 @@ class Vocab():
         # 让一个batch中的句子按照长度排序
         #  logging.debug(['origin summaries: ', sents_list])
         #  logging.debug(['origin sents_len: ', sents_len])
-        sents_list = sorted(sents_list, key=lambda x: len(x), reverse = True)
-        sents_len = sorted(sents_len, reverse = True)
+        #  sents_list = sorted(sents_list, key=lambda x: len(x), reverse = True)
+        #  sents_len = sorted(sents_len, reverse = True)
         #  logging.debug(['origin summaries: ', sents_list])
         #  logging.debug(['origin sents_len: ', sents_len])
 
@@ -149,6 +181,7 @@ class Vocab():
         label_features = torch.LongTensor(label_features)
         sents_len = torch.LongTensor(sents_len)
 
+        # sents_len is the words number of summaries. Not just a sentence
         return input_features, label_features, sents_len, reference
 
 
