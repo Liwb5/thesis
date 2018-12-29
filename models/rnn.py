@@ -1,4 +1,5 @@
 # coding:utf-8
+from pprint import pprint, pformat
 import logging
 import torch
 import torch.nn as nn
@@ -56,7 +57,7 @@ class rnn_encoder(nn.Module):
         return enc_out.transpose(0, 1), h_n
 
 class stack_encoder(nn.Module):
-    def __init__(self, args, embed=None):
+    def __init__(self, args, embed=None, device=None):
         super(stack_encoder, self).__init__()
 
         if embed is not None:
@@ -69,6 +70,7 @@ class stack_encoder(nn.Module):
             self.embedding = nn.Embedding(args.vocab_size, args.embed_dim) 
 
         self.args = args
+        self.device = device
 
         self.word_RNN = nn.GRU(
                         input_size = args.embed_dim,
@@ -86,7 +88,7 @@ class stack_encoder(nn.Module):
         # x:[N,L,O_in]
         out = []
         for index,t in enumerate(x):
-            t = t[:seq_lens[index],:]
+            t = t[:seq_lens[index],:] # get rid of padding index
             t = torch.t(t).unsqueeze(0)
             out.append(F.max_pool1d(t,t.size(2)))
         
@@ -97,7 +99,7 @@ class stack_encoder(nn.Module):
         if not isinstance(doc_lens, list):
             doc_lens = [doc_lens]
 
-        pad_dim = words_out.size(1)
+        pad_dim = words_out.size(1) # 2H
         max_doc_len = max(doc_lens)
         sent_input = []
         start = 0
@@ -109,7 +111,7 @@ class stack_encoder(nn.Module):
                 sent_input.append(valid.unsqueeze(0))
             else:
                 pad = Variable(torch.zeros(max_doc_len-doc_len,pad_dim))
-                if self.args.device is not None:
+                if self.device is not None:
                     pad = pad.cuda()
                 sent_input.append(torch.cat([valid,pad]).unsqueeze(0))          # (1,max_len,2*H)
         sent_input = torch.cat(sent_input,dim=0)                                # (B,max_len,2*H)
@@ -122,17 +124,23 @@ class stack_encoder(nn.Module):
             doc_lens(list): (B, 1)
         """
         sent_lens = torch.sum(torch.sign(x), dim=1).data
-        x = self.embedding(x) # batch_size first 
+        logging.debug(['encoder: sent_lens: ', sent_lens])
+        word_embed = self.embedding(x) # batch_size first 
 
         # word level RNN
-        x = self.word_RNN(x)[0]  # (N, sent_lens, 2H)
-        word_out = self.max_pool1d(x, sent_lens) #(N, 2H)
-        x = self.pad_doc(word_out, doc_lens)
-        sent_out = self.sent_RNN(x)[0]
-        docs = self.max_pool1d(sent_out,doc_lens)                                # (B,2*H)
+        word_hidden = self.word_RNN(word_embed)[0]  # (N, sent_lens, 2H)
+        #  logging.debug(['after word_RNN(expected N,max_sent_lens[4], 2H[8]): ', word_hidden.size()])
+        sent_embed = self.max_pool1d(word_hidden, sent_lens) #(N, 2H)
+        #  logging.debug(['after max_pool1d(expected N, 2H[8]): ', sent_embed.size()])
+        sent_embed  = self.pad_doc(sent_embed, doc_lens)
+        logging.debug(['after pad_doc, sent_embed(expected B,max_doc_len, 2H[8]): ', sent_embed.size()])
+        sent_hidden = self.sent_RNN(sent_embed)[0]
+        logging.debug(['after sent_RNN, sent_hidden(expected B,max_doc_len, 2H[8]): ', sent_hidden.size()])
+        doc_embed = self.max_pool1d(sent_hidden,doc_lens)                                # (B,2*H)
+        logging.debug(['after doc max_pool1d, doc_embed(expected B, 2H[8]): ', doc_embed.size()])
 
-        # sent_out: (B, seq_len, 2H)
-        return sent_out, docs, x  # x 是每个句子的表示，用于decoder的时候索引
+        # sent_hidden: (B, max_doc_len, 2H) doc_embed: (B, 2H)
+        return sent_hidden, doc_embed, sent_embed # sent_embed(B, max_doc_len, 2H) 是每个句子的表示
 
 class pn_decoder(nn.Module):
     """
@@ -182,13 +190,13 @@ class pn_decoder(nn.Module):
         self.mask = Parameter(torch.ones(1), requires_grad=False)
         self.runner = Parameter(torch.zeros(1), requires_grad=False)
 
-    def _init_mask(lens):
-        L = lens.data.view(-1).tolist
-        batch_size = len(L)
-        mask = self.mask.repeat(max(L)).unsqueeze(0).repeat(batch_size, 1)
+    def _init_mask(self, lens):
+        #  lens = lens.data.view(-1).tolist
+        batch_size = len(lens)
+        mask = self.mask.repeat(max(lens)).unsqueeze(0).repeat(batch_size, 1)
         # mask padding index
         for i in range(batch_size):
-            mask[i][L[i]:] = 0
+            mask[i][lens[i]:] = 0
         return mask
 
     def forward(self, inputs, decoder_input, hidden, context, docs_lens):
@@ -201,16 +209,18 @@ class pn_decoder(nn.Module):
             docs_lens(B, 1): 每篇文档的句子数量, 用于mask padding index
         """
         batch_size = context.size(0)
-        input_length = context.size(1)
         
         mask = self._init_mask(docs_lens)  
+        #  logging.debug(['mask size(expected B, max_doc_len[3], 2H[8]): ', mask.size()])
+        #  logging.debug(['mask (expected B, max_doc_len[3]): ', pformat(mask.data.cpu().numpy())])
         self.att.init_inf(mask.size())   
 
         # Generating arang(input_length), broadcasted across batch_size
-        runner = self.runner.repeat(input_length)
-        for i in range(input_length):
+        runner = self.runner.repeat(mask.size(1))
+        for i in range(mask.size(1)):
             runner.data[i] = i
         runner = runner.unsqueeze(0).expand(batch_size, -1).long()
+        #  logging.debug(['runner (expected B, max_doc_len[3]): ', pformat(runner.data.cpu().numpy())])
 
         outputs = []
         pointers = []
@@ -232,19 +242,24 @@ class pn_decoder(nn.Module):
             # h_t(B, hidden_size); alpha(B, seq_len)
             return h_t, alpha 
 
-        for _ in range(min(self.max_dec_len, input_length)):
-            hidden, outs = step(decoder_input, hidden)
+        logging.debug(['sent_embed(inputs in decoder) (B, max_doc_len[3], 2H): ', inputs.data.cpu().numpy()])
+        for _ in range(min(self.max_dec_len, min(docs_lens))):
+            hidden, att_probs = step(decoder_input, hidden)
+            logging.debug(['step output att_probs(attention probs)(expected B, max_doc_len[3]): ', att_probs.data.cpu().numpy()])
 
             # Masking selected inputs
-            masked_outs = outs * mask
+            #  masked_outs = att_probs * mask  # unnecessary operation, because mask will be updated in every step
+            #  logging.debug(['masked_outs (expected B, max_doc_len[3]): ', mask.data.cpu().numpy()])
 
             # Get maximum probabilities and indices
             # TODO e-greedy sample 
             # max_probs: (B, 1) indices: (B, 1) 
-            max_probs, indices = masked_outs.max(1)
+            #  max_probs, indices = masked_outs.max(1)
+            max_probs, indices = att_probs.max(1)
+            logging.debug(['selected indices (expected B, 1): ', indices.data.cpu().numpy()])
 
             # runner 每一行都是从0,1,2,3递增，one_hot_pointers是为了得到当前step所选择的对应位置
-            one_hot_pointers = (runner == indices.unsqueeze(1).expand(-1, outs.size()[1])).float()
+            one_hot_pointers = (runner == indices.unsqueeze(1).expand(-1, att_probs.size()[1])).float()
 
             # Update mask to ignore seen indices
             mask  = mask * (1 - one_hot_pointers)
@@ -252,12 +267,17 @@ class pn_decoder(nn.Module):
             # Get embedded inputs by max indices
             embedding_mask = one_hot_pointers.unsqueeze(2).expand(-1, -1, self.hidden_size).byte()
             decoder_input = inputs[embedding_mask.data].view(batch_size, self.hidden_size)
+            logging.debug(['decoder input in every step(B, 2H): ', decoder_input.data.cpu().numpy()])
 
-            outputs.append(outs.unsqueeze(0))
+            outputs.append(att_probs.unsqueeze(0))
             pointers.append(indices.unsqueeze(1))
 
         outputs = torch.cat(outputs).permute(1, 0, 2)  #(B, max_dec_len, seq_len)
         pointers = torch.cat(pointers, 1) # (B, max_dec_len)
+        logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.size()])
+        logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.data.cpu().numpy()])
+        logging.debug(['pointers (B, min_doc_lens): ', pointers.size()])
+        logging.debug(['pointers (B, min_doc_lens): ', pointers.data.cpu().numpy()])
 
         return outputs, pointers, hidden
             

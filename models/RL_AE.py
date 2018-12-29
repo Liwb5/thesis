@@ -12,17 +12,21 @@ from base.base_model import BaseModel
 from utils.util import *
 
 class RL_AE(BaseModel):
-    def __init__(self, args, eval_model=None):
+    def __init__(self, args, eval_model=None, device=None):
         super(RL_AE, self).__init__()
 
         args = dict_to_namedtuple(args)
         self.args = args
+        self.device = device
 
-        self.docs_encoder = stack_encoder(args, embed=None)
+        # TODO embedding should use pretrained word vecotr, can get embedding from eval_model
+        self.embedding = nn.Embedding(args.vocab_size, args.embed_dim)
 
-        self.hidden_size = args.hidden_size*2 if args.bidirectional else args.hidden_size
+        self.stack_encoder = stack_encoder(args, embed=self.embedding, device=device)
+
+        self.dec_hidden_size = args.hidden_size*2 if args.bidirectional else args.hidden_size
         self.pn_decoder = pn_decoder(vocab_size = args.vocab_size,
-                                    hidden_size = self.hidden_size,
+                                    hidden_size = self.dec_hidden_size,
                                     sos_id = args.sos_id, 
                                     eos_id = args.eos_id,
                                     n_layers = 1,
@@ -31,12 +35,12 @@ class RL_AE(BaseModel):
                                     input_dropout_p = args.input_dropout_p,
                                     dropout_p = args.dropout_p,
                                     use_attention = True,
-                                    embed = None,
+                                    embed = self.embedding, # TODO pn_decoder do not need embedding
                                     args = args,
                                     eval_model = None)
 
-        self.eval_model = eval_model
-        self.dec_input0 = Parameter(torch.FloatTensor(self.hidden_size), requires_grad=False)
+        self.eval_model = eval_model # TODO eval_model are auto encoder 
+        self.dec_input0 = Parameter(torch.FloatTensor(self.dec_hidden_size), requires_grad=False)
 
     def forward(self, docs_features, doc_lens, summaries_features, summaries_lens, labels, labels_len, tfr):
 
@@ -45,16 +49,17 @@ class RL_AE(BaseModel):
 
         sents_embed2 = torch.cat([ torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(sents_embed, labels) ]) # (B, labels_max_len, 2H)
 
-        dec_input0 = self.dec_input0.unsqueeze(0).expand(batch_size, -1)
+        dec_input0 = self.dec_input0.unsqueeze(0).expand(sents_embed.size(0), -1)
+        logging.debug(['dec_input0(expected B, 2H[8]): ', dec_input0.size()])
         dec_outputs, pred_index,  hidden = self.pn_decoder(inputs = sents_embed, 
                                                         decoder_input = dec_input0,
                                                         hidden = enc_hidden_t,
                                                         context = enc_out,
                                                         docs_lens = doc_lens)
 
-        selected_docs_features = docs_features[pred_index.byte().data].view(docs_features.size(0), pred_index.size(1))
+        #  selected_docs_features = docs_features[pred_index.byte().data].view(docs_features.size(0), pred_index.size(1))
 
-        R = self.eval_model(selected_docs_features, summaries_features)
+        #  R = self.eval_model.compute_reward(docs_features, summaries_features)
 
 
 

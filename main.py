@@ -62,7 +62,7 @@ def main(config, resume):
 
     # build model architecture
     #  model = get_instance2(models, 'model', config)
-    model = getattr(models, config['model']['type'])(config['model']['args'])
+    model = getattr(models, config['model']['type'])(config['model']['args'], device=config['device'])
     logging.info(['model infomation: ', model])
 
     # get function handles of loss and metrics
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     else:
         raise AssertionError("Configuration file need to be specified. Add '-c config.json', for example.")
     
-    if args.device:
+    if args.device is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.device
-
+    
     main(config, args.resume)

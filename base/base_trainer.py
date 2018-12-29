@@ -21,6 +21,8 @@ class BaseTrainer:
 
         # setup GPU device if available, move model into configured device
         self.device = config['device']
+        self.model = model
+        self.loss = loss
         if self.device is not None:
             torch.cuda.set_device(config['device'])
             self.model = model.cuda()

@@ -1,4 +1,6 @@
 # coding:utf-8
+import logging
+from pprint import pprint, pformat
 import torch
 import torch.nn as nn
 from torch.nn import Parameter
@@ -66,3 +68,4 @@ class Attention(nn.Module):
 
     def init_inf(self, mask_size):
         self.inf = self._inf.unsqueeze(1).expand(*mask_size)
+        #  logging.debug(['attention init_inf(expected B, max_doc_len[3]): ', pformat(self.inf.data.cpu().numpy())])

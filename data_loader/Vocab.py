@@ -91,7 +91,7 @@ class Vocab():
             res.append(feature)
 
         res = torch.LongTensor(res)
-        labels_lens = torch.LongTensor(labels_lens)
+        #  labels_lens = torch.LongTensor(labels_lens)
 
         return res, labels_lens
 
@@ -131,9 +131,10 @@ class Vocab():
         #      doc_sent_features.append(features[doc_lens[i]:doc_lens[i+1]])
 
         doc_sent_features = torch.LongTensor(features)
-        doc_lens = torch.LongTensor(doc_lens)
+        #  doc_lens = torch.LongTensor(doc_lens)
 
         # batch_sents: [['i', 'am', 'a', 'student'],['i', 'am', 'a', 'student']]
+        # doc_sent_features: (B, max_sent_len), doc_lens: (B, ) 
         return doc_sent_features, batch_sents, doc_lens
 
     def sents_to_features(self, sents_list, sents_len, max_sent_len):
