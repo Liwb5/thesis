@@ -57,6 +57,7 @@ class RL_AE(BaseModel):
                                                         context = enc_out,
                                                         docs_lens = doc_lens)
 
+        # TODO how to compute reward. see RL_combin how to do it 
         #  selected_docs_features = docs_features[pred_index.byte().data].view(docs_features.size(0), pred_index.size(1))
 
         #  R = self.eval_model.compute_reward(docs_features, summaries_features)
