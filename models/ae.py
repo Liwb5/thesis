@@ -14,15 +14,18 @@ from base.base_model import BaseModel
 from utils.util import *
 
 class ae(BaseModel):
-    def __init__(self, args):
+    def __init__(self, args, device=None):
         super(ae, self).__init__()
 
         args = dict_to_namedtuple(args)
         self.args = args
+        self.device = device
         #  self.logger.debug('model name: %s' % self.__class__.__name__)
         #  self.logger.debug(['args in model: ', self.args])
 
-        self.encoder = rnn_encoder(args, embed=None)
+        self.embedding = nn.Embedding(args.vocab_size, args.embed_dim)
+
+        self.encoder = rnn_encoder(args, embed=self.embedding)
 
         self.decoder = DecoderRNN(vocab_size = args.vocab_size,
                                   max_len = args.max_len,
@@ -35,7 +38,7 @@ class ae(BaseModel):
                                   input_dropout_p = args.input_dropout_p,
                                   dropout_p = args.dropout_p,
                                   use_attention = args.use_attention,
-                                  embed = None,
+                                  embed = self.embedding,
                                   args = args)
 
 

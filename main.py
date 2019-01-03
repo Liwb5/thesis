@@ -77,6 +77,7 @@ def main(config, resume):
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = getattr(torch.optim, config['optimizer']['type'])(trainable_params, **config['optimizer']['args'])
     #  lr_scheduler = get_instance(torch.optim.lr_scheduler, 'lr_scheduler', config, optimizer)
+    lr_scheduler = getattr(torch.optim.lr_scheduler, config['lr_scheduler']['type'])(**config['lr_scheduler']['args'])
 
     trainer = Trainer(model, loss,  optimizer,
                       resume=resume,
@@ -84,7 +85,7 @@ def main(config, resume):
                       data_loader=data_loader,
                       valid_data_loader=valid_data_loader,
                       metrics=metrics,
-                      lr_scheduler=None, #lr_scheduler,
+                      lr_scheduler=lr_scheduler,
                       train_logger=train_logger,
                       vocab = vocab)
 

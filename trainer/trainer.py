@@ -135,6 +135,9 @@ class Trainer(BaseTrainer):
             #      self.logger.info(['hyp: ', hyp])
             #      self.logger.info(['ref: ', reference])
 
+        if self.lr_scheduler is not None:
+            self.lr_scheduler.step()  # control learning rate gradually smaller
+
         log = {}
         return log
 

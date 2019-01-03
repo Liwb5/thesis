@@ -27,7 +27,7 @@ class rnn_encoder(nn.Module):
 
         self.RNN = nn.GRU(input_size = args.embed_dim, 
                         hidden_size = args.hidden_size, 
-                        batch_first = False,
+                        batch_first = True,
                         bidirectional = args.bidirectional)
 
     def avg_pool1d(self, x, seq_lens):
