@@ -88,7 +88,7 @@ class AE_trainer(BaseTrainer):
         for step, dataset in enumerate(self.data_loader):
             self.global_step += 1
             step_in_epoch += 1
-            sum_features, sum_target, sum_word_lens, sum_ref = self.vocab.summary_to_features(dataset['summaries'])
+            sum_features, sum_target, sum_word_lens, sum_ref = self.vocab.abs_to_features(dataset['summaries'])
 
             sum_features, sum_word_lens, sum_target = Variable(sum_features), Variable(sum_word_lens), Variable(sum_target) 
             #  self.logger.debug(pformat(['sum_features: ', sum_features.data.numpy()]))

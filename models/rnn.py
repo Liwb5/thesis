@@ -56,6 +56,7 @@ class rnn_encoder(nn.Module):
 
         return enc_out.transpose(0, 1), h_n
 
+
 class stack_encoder(nn.Module):
     def __init__(self, args, embed=None, device=None):
         super(stack_encoder, self).__init__()
@@ -139,8 +140,10 @@ class stack_encoder(nn.Module):
         doc_embed = self.max_pool1d(sent_hidden,doc_lens)                                # (B,2*H)
         logging.debug(['after doc max_pool1d, doc_embed(expected B, 2H[8]): ', doc_embed.size()])
 
-        # sent_hidden: (B, max_doc_len, 2H) doc_embed: (B, 2H)
-        return sent_hidden, doc_embed, sent_embed # sent_embed(B, max_doc_len, 2H) 是每个句子的表示
+        # sent_hidden: (B, max_doc_len, 2H) 是每个句子对应的hidden state
+        # doc_embed: (B, 2H) # 每篇文档对应的表示
+        # sent_embed(B, max_doc_len, 2H) 是每个句子的表示
+        return sent_hidden, doc_embed, sent_embed 
 
 class pn_decoder(nn.Module):
     """
@@ -281,3 +284,46 @@ class pn_decoder(nn.Module):
 
         return outputs, pointers, hidden
             
+
+class rnn_decoder(nn.Module):
+    def __init__(self, vocab_size, hidden_size,
+            sos_id, eos_id,
+            n_layers=1, rnn_cell='gru', bidirectional=False,
+            input_dropout_p=0, dropout_p=0, use_attention=False,
+            embed=None, args = None, eval_model=None, max_dec_len=3):
+
+        super(pn_decoder, self).__init__()
+        self.bidirectional_encoder = bidirectional
+
+        self.vocab_size = vocab_size
+        self.hidden_size = hidden_size
+        self.n_layers = n_layers
+        self.input_dropout_p = input_dropout_p
+        self.dropout_p = dropout_p
+        self.use_attention = use_attention
+        self.eos_id = eos_id
+        self.sos_id = sos_id
+        self.eval_model = eval_model
+        self.args = args
+        self.max_dec_len = max_dec_len
+
+        self.gru_cell = nn.GRUCell(input_size = hidden_size, 
+                                    hidden_size = hidden_size)
+
+        if use_attention:
+            self.att = Attention(self.hidden_size, self.hidden_size)
+
+    def forward(self, inputs, decoder_input, hidden, context, teacher_forcing_ratio=0):
+        """
+        Args:
+            inputs(B, labels_len, hidden_size): sentence embedding, 每一步的decoder的输入从这里选择 
+            decoder_input(B, hidden_size): 初始decoder的输入，一般是0 
+            hidden(B, hidden_size): 解码器的representation，用于表示整篇文档,作为decoder的初始hidden_state
+            context(B, seq_len, hidden_size): 编码器每个step的hidden_state，用于attention
+        """
+
+        use_tfr = True if random.random() < teacher_forcing_ratio else False
+
+        batch_size = context.size(0)
+
+

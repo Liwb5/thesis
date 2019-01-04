@@ -95,6 +95,54 @@ class Vocab():
 
         return res, labels_lens
 
+    def abs_to_features(self, summaries):
+        """
+        This function is for training autoencoder.
+        """
+        if not isinstance(summaries,list):
+            summaries = [summaries]
+
+        # truncate document 
+        sents_list = []  # e.g: ['i am high school student','you are welcome']
+        doc_lens = []  # e.g: [5, 3]
+        for summary in summaries:
+            sents = summary.split(self.split_token)
+            max_sent_num = min(self.doc_trunc, len(sents))
+            sents = sents[:max_sent_num]
+            sents_list += sents  # here we add different document's sentences in the same list
+            doc_lens.append(max_sent_num) # doc_lens to record the sentences number of every document
+
+        # trunc and pad sentence
+        max_sent_len = 0
+        batch_sents = []  # sentences after truncation the sentence's length.  
+                          #e.g:[['i','am','high','school'], ['you','are','welcome']]
+        origin_tokens = [] # sentences after truncation but do not splited by space
+                            # e.g: ['i am high school','you are welcome']
+        for sent in sents_list:
+            words = sent.split()
+            if len(words) > self.sent_trunc:
+                words = words[:self.sent_trunc] # truncate the sentence
+            max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
+            batch_sents.append(words)
+            origin_tokens.append(''.join(words))
+
+        input_features = []
+        label_features = []
+        for sent in batch_sents:
+            feature = [self.w2i(w) for w in sent]
+            pad = [self.PAD_ID for _ in range(max_sent_len - len(sent))]
+            input_feature = feature + pad
+            label_feature = [self.SOS_ID] + feature + [self.EOS_ID] + pad
+            input_features.append(input_feature)
+            label_features.append(label_feature)
+
+
+        input_features = torch.LongTensor(input_features)
+        label_features = torch.LongTensor(label_features)
+        #  doc_lens = torch.LongTensor(doc_lens)
+
+        return input_features, label_features, doc_lens, origin_tokens
+
     def docs_to_features(self, docs):
         if not isinstance(docs,list):
             docs = [docs]
@@ -112,12 +160,14 @@ class Vocab():
         # trunc and pad sentence
         max_sent_len = 0
         batch_sents = []
+        origin_tokens = []
         for sent in sents_list:
             words = sent.split()
             if len(words) > self.sent_trunc:
                 words = words[:self.sent_trunc]
             max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
             batch_sents.append(words)
+            origin_tokens.append(''.join(words))
 
         features = []
         for sent in batch_sents:
@@ -135,7 +185,7 @@ class Vocab():
 
         # batch_sents: [['i', 'am', 'a', 'student'],['i', 'am', 'a', 'student']]
         # doc_sent_features: (B, max_sent_len), doc_lens: (B, ) 
-        return doc_sent_features, batch_sents, doc_lens
+        return doc_sent_features, origin_tokens, doc_lens
 
     def sents_to_features(self, sents_list, sents_len, max_sent_len):
         if not isinstance(sents_list, list):
@@ -175,8 +225,8 @@ class Vocab():
         # 让一个batch中的句子按照长度排序
         #  logging.debug(['origin summaries: ', sents_list])
         #  logging.debug(['origin sents_len: ', sents_len])
-        #  sents_list = sorted(sents_list, key=lambda x: len(x), reverse = True)
-        #  sents_len = sorted(sents_len, reverse = True)
+        sents_list = sorted(sents_list, key=lambda x: len(x), reverse = True)
+        sents_len = sorted(sents_len, reverse = True)
         #  logging.debug(['origin summaries: ', sents_list])
         #  logging.debug(['origin sents_len: ', sents_len])
 
