@@ -8,13 +8,14 @@ import argparse
 import sys
 import random 
 import numpy as np
+from pprint import pprint, pformat
 
 import torch
 from torch.utils.data import DataLoader
 import models
 import models.loss as module_loss
 import models.metrics as module_metrics
-from trainer import Trainer
+from trainer import Trainer, AE_trainer
 from utils import Logger
 from utils.config import *
 from data_loader import Vocab
@@ -41,7 +42,7 @@ def main(config, resume):
                         level = getattr(logging, config['log_level'].upper()),
                         format = log_format)
 
-    logging.info(['config: ', config])
+    logging.info(['config: ', pformat(config)])
     train_logger = Logger()
 
     # setup data_loader instances
@@ -54,14 +55,12 @@ def main(config, resume):
     val_data = Dataset(config['data_loader']['val_data'], 
                         data_quota=config['data_loader']['val_data_quota'])
     logging.info('using %d examples to val. ' % len(val_data))
-    valid_data_loader = None  # TODO DEBUG
-    #  valid_data_loader = DataLoader(dataset = val_data,
-    #                          batch_size = config['data_loader']['batch_size'])
+    valid_data_loader = DataLoader(dataset = val_data,
+                            batch_size = config['data_loader']['batch_size'])
 
     vocab = Vocab(**config['vocabulary'], embed=None)
 
     # build model architecture
-    #  model = get_instance2(models, 'model', config)
     model = getattr(models, config['model']['type'])(config['model']['args'], device=config['device'])
     logging.info(['model infomation: ', model])
 
@@ -76,10 +75,9 @@ def main(config, resume):
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = getattr(torch.optim, config['optimizer']['type'])(trainable_params, **config['optimizer']['args'])
-    #  lr_scheduler = get_instance(torch.optim.lr_scheduler, 'lr_scheduler', config, optimizer)
     lr_scheduler = getattr(torch.optim.lr_scheduler, config['lr_scheduler']['type'])(**config['lr_scheduler']['args'])
 
-    trainer = Trainer(model, loss,  optimizer,
+    trainer = AE_trainer(model, loss,  optimizer,
                       resume=resume,
                       config=config,
                       data_loader=data_loader,
