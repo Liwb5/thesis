@@ -1,5 +1,5 @@
 {
-    "task_name": "debug.1.1220",
+    "task_name": "debug.ae.1.0105",
     "device": 0,
     "log_level": "debug",
     "seed": 1667,
@@ -14,11 +14,11 @@
     },
 
     "trainer":{
-        "epochs": 100,
+        "epochs": 1000,
         "save_period": 500,
         "print_every": 10,
-        "eval_every": 10000,
-        "val_eval_every": 100,
+        "eval_every": 1000000,
+        "val_eval_every": 100000,
         "max_norm": 1.0,
         "save_dir": "checkpoints/",
         "log_dir": "logs/",
@@ -33,7 +33,7 @@
         "batch_size": 10,
         "shuffle": true,
         "val_data_quota": 100,
-        "data_quota": 10000
+        "data_quota": 100000
     },
 
     "vocabulary": {
