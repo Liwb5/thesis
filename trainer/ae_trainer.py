@@ -45,7 +45,7 @@ class AE_trainer(BaseTrainer):
     #      self.logger.info(['ref: ', target_tokens])
 
     def _update_tfr(self, epoch):
-        tfr = max(1.0-0.1*epoch), 0.5)
+        tfr = max((1.0-0.1*epoch), 0.5)
         #  tfr = self.config['trainer']['teacher_forcing_ratio'] - self.global_step/len(self.data_loader)
         return tfr 
 
@@ -88,7 +88,7 @@ class AE_trainer(BaseTrainer):
         for step, dataset in enumerate(self.data_loader):
             self.global_step += 1
             step_in_epoch += 1
-            sum_features, sum_target, sum_word_lens, sum_ref = self.vocab.abs_to_features(dataset['summaries'])
+            sum_features, sum_target, sum_word_lens, sum_ref = self.vocab.summary_to_features(dataset['summaries'])
 
             sum_features, sum_word_lens, sum_target = Variable(sum_features), Variable(sum_word_lens), Variable(sum_target) 
             #  self.logger.debug(pformat(['sum_features: ', sum_features.data.numpy()]))
@@ -126,7 +126,7 @@ class AE_trainer(BaseTrainer):
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()  # control learning rate gradually smaller
 
-        log = {}
+        log = {'train_loss': avg_loss}
         return log
 
     def _valid_epoch(self, epoch):
@@ -170,9 +170,6 @@ class AE_trainer(BaseTrainer):
                     final_val_metrics[m] = {s: val_metrics[i][m][s] + final_val_metrics[m][s] for s in STATS}
             final_val_metrics = {m: {s: final_val_metrics[m][s] / len(val_metrics) for s in STATS}
                                 for m in METRICS}
-        self.logger.info(['finished val epoch.'])
-        self.logger.info(['val_loss:', total_val_loss / step])
-        self.logger.info(['val_metrics:', final_val_metrics])
 
         self.model.train()
         return {

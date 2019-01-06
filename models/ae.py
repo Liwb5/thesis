@@ -25,8 +25,8 @@ class ae(BaseModel):
 
         self.embedding = nn.Embedding(args.vocab_size, args.embed_dim)
 
-        #  self.encoder = rnn_encoder(args, embed=self.embedding)
-        self.encoder = stack_encoder(args, embed=self.embedding, device=device)
+        self.encoder = rnn_encoder(args, embed=self.embedding)
+        #  self.encoder = stack_encoder(args, embed=self.embedding, device=device)
 
         self.decoder = DecoderRNN(vocab_size = args.vocab_size,
                                   max_len = args.max_len,
@@ -47,16 +47,16 @@ class ae(BaseModel):
         """ @x: (B, L).
         """
 
-        enc_out, enc_hidden_t, sents_embed = self.encoder(x, lengths)
+        enc_out, enc_h_n = self.encoder(x, lengths)
         #  logging.debug(['the size of enc_h_n: ', enc_h_n.size()])
         #  logging.debug(['the size of encoder_outputs: ', encoder_outputs.size()])
         #  enc_h_n = enc_h_n.transpose(1,2)
         #  enc_h_n = torch.cat(enc_h_n, 0).contiguous().unsqueeze(0).transpose(1,2)
 
         # dec_outputs:(seq_len, B, vocab_size) the probability of every word
-        dec_outputs, dec_hidden, ret_dict = self.decoder(inputs = sents_embed,
+        dec_outputs, dec_hidden, ret_dict = self.decoder(inputs = target,
                                                         encoder_hidden = enc_h_n,
-                                                        encoder_outputs = encoder_outputs,
+                                                        encoder_outputs = enc_out,
                                                         teacher_forcing_ratio = teacher_forcing_ratio)
 
         predicts = ret_dict[self.decoder.KEY_SEQUENCE]

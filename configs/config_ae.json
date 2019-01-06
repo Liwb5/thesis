@@ -1,6 +1,6 @@
 {
-    "task_name": "debug.ae.1.0104",
-    "device": 0,
+    "task_name": "debug.ae.1.0106",
+    "device": null,
     "log_level": "debug",
     "seed": 1667,
     "loss": "nll_loss",

@@ -30,6 +30,17 @@ class rnn_encoder(nn.Module):
                         batch_first = True,
                         bidirectional = args.bidirectional)
 
+    def max_pool1d(self,x,seq_lens):
+        # x:[N,L,O_in]
+        out = []
+        for index,t in enumerate(x):
+            t = t[:seq_lens[index],:] # get rid of padding index
+            t = torch.t(t).unsqueeze(0)
+            out.append(F.max_pool1d(t,t.size(2)))
+        
+        out = torch.cat(out).squeeze(2)
+        return out
+
     def avg_pool1d(self, x, seq_lens):
         """ @x: (n, l, h).  average pooling in second dimension (l)
             @seq_lens: (n, 1)  
@@ -47,14 +58,15 @@ class rnn_encoder(nn.Module):
     def forward(self, x, lengths):
         """ @x: (B, seq_len). 
         """
-        #  sent_lens = torch.sum(torch.sign(x), dim=1) # (N, 1). the real length of every sentence
-        x = self.embedding(x).transpose(0, 1)    # (L, B, E). E: embedding dimension
-        packed = rnn_utils.pack_padded_sequence(x,lengths = list(lengths))
+        sent_lens = torch.sum(torch.sign(x), dim=1) # (N, 1). the real length of every sentence
+        x = self.embedding(x)    # (B, L, E). E: embedding dimension
+        #  packed = rnn_utils.pack_padded_sequence(x,lengths = list(lengths))
 
-        enc_out, h_n = self.RNN(packed)   # output: (L, B, 2*H) h_n: (num_layer*num_direction, B, H)
-        enc_out, _ = rnn_utils.pad_packed_sequence(enc_out)
+        word_hidden, _ = self.RNN(x)   # output: (L, B, 2*H) h_n: (num_layer*num_direction, B, H)
+        h_n = self.max_pool1d(word_hidden, sent_lens) #(N, 2H)
+        #  enc_out, _ = rnn_utils.pad_packed_sequence(enc_out)
 
-        return enc_out.transpose(0, 1), h_n
+        return word_hidden, h_n
 
 
 class stack_encoder(nn.Module):

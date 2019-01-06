@@ -56,14 +56,18 @@ class BaseTrainer:
         Full training logic
         """
         for epoch in range(self.start_epoch, self.epochs + 1):
-            result = self._train_epoch(epoch)
+            train_result = self._train_epoch(epoch)
 
             val_result = {}
             if self.do_validation:
                 val_result = self._valid_epoch(epoch)
 
             # save logged informations into log dict
-            log = {'epoch': epoch, **val_result}
+            log = {'epoch': epoch, **train_result, **val_result}
+            if self.train_logger is not None:
+                self.train_logger.add_entry(log) # record some information so that we can save it in a checkpoint
+
+            self.logger.info(log)
             # evaluate model performance according to configured metric, save best checkpoint as model_best
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=None)

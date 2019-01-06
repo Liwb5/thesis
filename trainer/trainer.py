@@ -182,9 +182,6 @@ class Trainer(BaseTrainer):
                     final_val_metrics[m] = {s: val_metrics[i][m][s] + final_val_metrics[m][s] for s in STATS}
             final_val_metrics = {m: {s: final_val_metrics[m][s] / len(val_metrics) for s in STATS}
                                 for m in METRICS}
-        self.logger.info(['finished val epoch.'])
-        self.logger.info(['val_loss:', total_val_loss / step])
-        self.logger.info(['val_metrics:', final_val_metrics])
 
         self.model.train()
         return {

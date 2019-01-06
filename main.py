@@ -75,7 +75,7 @@ def main(config, resume):
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = getattr(torch.optim, config['optimizer']['type'])(trainable_params, **config['optimizer']['args'])
-    lr_scheduler = getattr(torch.optim.lr_scheduler, config['lr_scheduler']['type'])(**config['lr_scheduler']['args'])
+    lr_scheduler = getattr(torch.optim.lr_scheduler, config['lr_scheduler']['type'])(optimizer, **config['lr_scheduler']['args'])
 
     trainer = AE_trainer(model, loss,  optimizer,
                       resume=resume,
@@ -113,5 +113,5 @@ if __name__ == '__main__':
     
     if args.device is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = args.device
-    
+
     main(config, args.resume)
