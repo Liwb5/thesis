@@ -1,6 +1,6 @@
 {
     "task_name": "debug.ae.1.0106",
-    "device": null,
+    "device": 0,
     "log_level": "debug",
     "seed": 1667,
     "loss": "nll_loss",
@@ -14,11 +14,12 @@
     },
 
     "trainer":{
-        "epochs": 1,
-        "save_period": 50000,
+        "epochs": 100,
+        "save_period": 50000000,
         "print_every": 10,
-        "eval_every": 1000000,
-        "val_eval_every": 100,
+        "print_token_every": 1000,
+        "val_eval_every": 10000000,
+        "do_validation": false,
         "max_norm": 1.0,
         "save_dir": "checkpoints/",
         "log_dir": "logs/",
@@ -27,18 +28,18 @@
     },
 
     "data_loader":{
-        "train_data": "./data/dm_data_from_summaRuNNer/origin_data/fake_data.json",
+        "train_data": "./data/dm_data_from_summaRuNNer/origin_data/train.json",
         "val_data": "./data/dm_data_from_summaRuNNer/origin_data/val.json",
         "test_data": "./data/dm_data_from_summaRuNNer/origin_data/test.json",
-        "batch_size": 2,
-        "shuffle": false,
+        "batch_size": 10,
+        "shuffle": true,
         "val_data_quota": 100,
-        "data_quota": -1
+        "data_quota": 200
     },
 
     "vocabulary": {
         "vocab_file": "./data/dm_data_from_summaRuNNer/origin_data/w2i.json",
-        "sent_trunc": 100,
+        "sent_trunc": 120,
         "doc_trunc": 50,
         "split_token": "\n"
     },
@@ -54,9 +55,9 @@
     "model": {
         "type": "ae",
         "args": {
-            "embed_dim": 3,
+            "embed_dim": 100,
             "vocab_size": 153826,
-            "hidden_size": 4,
+            "hidden_size": 128,
             "max_len": 120,
             "sos_id": 2,
             "eos_id": 3,

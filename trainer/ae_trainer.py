@@ -83,6 +83,7 @@ class AE_trainer(BaseTrainer):
         """
         self.model.train()
     
+        log = {'train_loss': 0}
         step_in_epoch = 0
         total_loss = 0
         for step, dataset in enumerate(self.data_loader):
@@ -113,20 +114,20 @@ class AE_trainer(BaseTrainer):
 
             if self.global_step % self.config['trainer']['print_every'] == 0:
                 avg_loss = total_loss/self.config['trainer']['print_every']
+                log['train_loss'] = avg_loss
                 self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f'
                         %(epoch, self.global_step, step_in_epoch, avg_loss))
                 self.writer.add_scalar('train/loss', avg_loss, self.global_step)
                 total_loss = 0
 
-            if self.global_step * self.config['data_loader']['batch_size'] % self.config['trainer']['eval_every']== 0:
+            if self.global_step * self.config['data_loader']['batch_size'] % self.config['trainer']['print_token_every']== 0:
                 hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
                 self.logger.info(['hyp: ', hyp])
-                self.logger.info(['ref: ', reference])
+                self.logger.info(['ref: ', sum_ref])
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()  # control learning rate gradually smaller
 
-        log = {'train_loss': avg_loss}
         return log
 
     def _valid_epoch(self, epoch):
