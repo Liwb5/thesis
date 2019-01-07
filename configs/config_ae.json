@@ -1,5 +1,5 @@
 {
-    "task_name": "debug.ae.1.0106",
+    "task_name": "train.ae.1.0107",
     "device": 0,
     "log_level": "debug",
     "seed": 1667,
@@ -15,11 +15,11 @@
 
     "trainer":{
         "epochs": 100,
-        "save_period": 50000000,
-        "print_every": 10,
-        "print_token_every": 1000,
-        "val_eval_every": 10000000,
-        "do_validation": false,
+        "save_period": 1,
+        "print_every": 20,
+        "print_token_every": 100000,
+        "val_eval_every": 100000000000000,
+        "do_validation": true,
         "max_norm": 1.0,
         "save_dir": "checkpoints/",
         "log_dir": "logs/",
@@ -31,10 +31,10 @@
         "train_data": "./data/dm_data_from_summaRuNNer/origin_data/train.json",
         "val_data": "./data/dm_data_from_summaRuNNer/origin_data/val.json",
         "test_data": "./data/dm_data_from_summaRuNNer/origin_data/test.json",
-        "batch_size": 10,
+        "batch_size": 15,
         "shuffle": true,
-        "val_data_quota": 100,
-        "data_quota": 200
+        "val_data_quota": -1,
+        "data_quota": -1
     },
 
     "vocabulary": {
