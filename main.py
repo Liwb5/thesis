@@ -38,7 +38,7 @@ def main(config, resume):
 
     log_format='%(asctime)s-%(filename)s[line:%(lineno)d]-%(levelname)s: %(message)s'
     logging.basicConfig(filename = ''.join((config['trainer']['log_dir'], 'log')),
-                        filemode = 'w',
+                        filemode = 'a',
                         level = getattr(logging, config['log_level'].upper()),
                         format = log_format)
 
