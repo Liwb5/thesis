@@ -35,7 +35,6 @@ class BaseTrainer:
         self.cfg_trainer = config['trainer']
         self.epochs = self.cfg_trainer['epochs']
         self.save_period = self.cfg_trainer['save_period']
-        self.print_every = self.cfg_trainer['print_every']
         self.start_epoch = 1
         self.global_step = 0
 

@@ -1,4 +1,4 @@
-task_name: train.ae.1.0107  # this is the name of the task
+task_name: debug.ae.1.0108  # this is the name of the task
 device: null                  # if you do not want to use GPU, set null
 log_level: debug
 seed: 1667
@@ -15,10 +15,10 @@ optimizer:
 trainer:
     epochs: 100
     save_period: 1
-    print_every: 20                   # print train loss every [num] batch
-    print_token_every: 100000         # print training tokens to see the result. print every [num] samples
-    val_eval_every: 100000000000000
-    do_validation: true
+    print_loss_every: 20                   # print train loss every [num] batches, related to the batch size
+    print_token_every: 6000              # print training tokens to see the result. print every [num] batches 
+    print_val_token_every: 600           # print val tokens to see the result. print every [num] batches 
+    do_validation: True
     max_norm: 1.0
     save_dir: checkpoints/
     log_dir: logs/
@@ -31,7 +31,7 @@ data_loader:
     val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
     test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
     batch_size: 15
-    shuffle: true
+    shuffle: True
     val_data_quota: -1
     data_quota: -1
 
@@ -49,8 +49,6 @@ lr_scheduler:
         step_size: 50
         gamma: 0.1
     
-
-
 model: 
     type: ae
     args: 
@@ -63,6 +61,6 @@ model:
         rnn_cell: gru
         input_dropout_p: 0.0 
         dropout_p: 0.0 
-        bidirectional: true
-        use_attention: false
+        bidirectional: True
+        use_attention: False
         pretrained_embed: ./data/cnn_dailymail_data/finished_dm_data/embed 

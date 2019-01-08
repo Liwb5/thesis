@@ -112,15 +112,15 @@ class AE_trainer(BaseTrainer):
             self.optimizer.step()
             total_loss += loss.item()
 
-            if self.global_step % self.config['trainer']['print_every'] == 0:
-                avg_loss = total_loss/self.config['trainer']['print_every']
+            if self.global_step % self.config['trainer']['print_loss_every'] == 0:
+                avg_loss = total_loss/self.config['trainer']['print_loss_every']
                 log['train_loss'] = avg_loss
                 self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f'
                         %(epoch, self.global_step, step_in_epoch, avg_loss))
                 self.writer.add_scalar('train/loss', avg_loss, self.global_step)
                 total_loss = 0
 
-            if self.global_step * self.config['data_loader']['batch_size'] % self.config['trainer']['print_token_every']== 0:
+            if self.global_step % self.config['trainer']['print_token_every']== 0:
                 hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
                 self.logger.info(['hyp: ', hyp])
                 self.logger.info(['ref: ', sum_ref])
@@ -160,7 +160,7 @@ class AE_trainer(BaseTrainer):
                 total_val_loss += loss.item()
                 val_metrics.append(self._eval_metrics(predicts, reference))
 
-                if step*self.config['data_loader']['batch_size'] % self.config['trainer']['val_eval_every']== 0:
+                if step % self.config['trainer']['print_val_token_every']== 0:
                     hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
                     self.logger.info(['hyp: ', hyp])
                     self.logger.info(['ref: ', reference])
