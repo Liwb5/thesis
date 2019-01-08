@@ -15,7 +15,10 @@ def get_config_from_yaml(yaml_file):
     Get the config hyperparameters from yaml file.
     Using AttrDict comtainer to place these hyperparameters.
     """
-    return AttrDict(yaml.load(open(yaml_file, 'r')))
+    with open(yaml_file, 'r') as f:
+        config = yaml.load(f)
+    config = process_config(config)
+    return config 
 
 
 def get_config_from_json(json_file):
