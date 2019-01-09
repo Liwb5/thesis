@@ -3,12 +3,17 @@ import json
 import datetime
 import os
 import sys
+import shutil
 from utils.util import make_dir
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
+
+def save_config(sourcefile, targetpath):
+    filename = sourcefile.split('/')[-1]
+    shutil.copyfile(sourcefile, targetpath+filename)
 
 def get_config_from_yaml(yaml_file):
     """
@@ -18,6 +23,7 @@ def get_config_from_yaml(yaml_file):
     with open(yaml_file, 'r') as f:
         config = yaml.load(f)
     config = process_config(config)
+    save_config(yaml_file, config['trainer']['save_dir'])
     return config 
 
 
@@ -31,6 +37,7 @@ def get_config_from_json(json_file):
     with open(json_file, 'r') as config_file:
         config = json.load(config_file)
     config = process_config(config)
+    save_config(json_file, config['trainer']['save_dir'])
     return config
 
 #  def replace_config(new_config, old_config):

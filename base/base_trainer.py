@@ -43,9 +43,9 @@ class BaseTrainer:
         self.writer = SummaryWriter(self.cfg_trainer['log_dir']) # tensorboard 建立的是目录，它会自动产生文件名，不需要手动指定
 
         #  Save configuration file into checkpoint directory:
-        config_save_path = os.path.join(self.cfg_trainer['save_dir'], 'config.json')
-        with open(config_save_path, 'w') as handle:
-            json.dump(config, handle, indent=4, sort_keys=False)
+        #  config_save_path = os.path.join(self.cfg_trainer['save_dir'], 'config.json')
+        #  with open(config_save_path, 'w') as handle:
+        #      json.dump(config, handle, indent=4, sort_keys=False)
 
         if resume:
             self._resume_checkpoint(resume)

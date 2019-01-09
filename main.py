@@ -104,7 +104,6 @@ if __name__ == '__main__':
         # load config file
         config = get_config_from_yaml(args.config)
         #  config = get_config_from_json(args.config)
-        #  path = os.path.join(config['trainer']['save_dir'], config['name'])
     elif args.resume:
         # load config file from checkpoint, in case new config file is not given.
         # Use '--config' and '--resume' arguments together to load trained model and train more with changed config.
