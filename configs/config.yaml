@@ -1,5 +1,5 @@
-task_name: debug.ae.1.0109  # this is the name of the task
-device: null                  # if you do not want to use GPU, set null
+task_name: train.ae.1.0107  # this is the name of the task
+device: 0                   # if you do not want to use GPU, set null
 log_level: debug
 seed: 1667
 loss: nll_loss
