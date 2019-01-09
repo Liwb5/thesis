@@ -1,4 +1,4 @@
-task_name: debug.ae.1.0108  # this is the name of the task
+task_name: debug.ae.1.0109  # this is the name of the task
 device: null                  # if you do not want to use GPU, set null
 log_level: debug
 seed: 1667
@@ -10,21 +10,20 @@ optimizer:
     args:
         lr: 0.001
     
-
-
 trainer:
-    epochs: 100
-    save_period: 1
-    print_loss_every: 20                   # print train loss every [num] batches, related to the batch size
-    print_token_every: 6000              # print training tokens to see the result. print every [num] batches 
-    print_val_token_every: 600           # print val tokens to see the result. print every [num] batches 
-    do_validation: True
-    max_norm: 1.0
-    save_dir: checkpoints/
-    log_dir: logs/
-    teacher_forcing_ratio: 0.9
-    output_dir: outputs/
-
+    type: AE_trainer
+    args:
+        epochs: 100
+        save_period: 1
+        print_loss_every: 20                   # print train loss every [num] batches, related to the batch size
+        print_token_every: 6000              # print training tokens to see the result. print every [num] batches 
+        print_val_token_every: 600           # print val tokens to see the result. print every [num] batches 
+        do_validation: True
+        max_norm: 1.0
+        save_dir: checkpoints/
+        log_dir: logs/
+        teacher_forcing_ratio: 0.9
+        output_dir: outputs/
 
 data_loader:
     train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json

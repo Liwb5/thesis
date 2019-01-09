@@ -23,7 +23,7 @@ def get_config_from_yaml(yaml_file):
     with open(yaml_file, 'r') as f:
         config = yaml.load(f)
     config = process_config(config)
-    save_config(yaml_file, config['trainer']['save_dir'])
+    save_config(yaml_file, config['trainer']['args']['save_dir'])
     return config 
 
 
@@ -37,7 +37,7 @@ def get_config_from_json(json_file):
     with open(json_file, 'r') as config_file:
         config = json.load(config_file)
     config = process_config(config)
-    save_config(json_file, config['trainer']['save_dir'])
+    save_config(json_file, config['trainer']['args']['save_dir'])
     return config
 
 #  def replace_config(new_config, old_config):
@@ -46,10 +46,10 @@ def get_config_from_json(json_file):
 def process_config(config):
     # make some necessary directories to save some important things
     time_stamp = datetime.datetime.now().strftime('%m%d_%H%M%S')
-    config['trainer']['log_dir'] = ''.join((config['trainer']['log_dir'], config['task_name'], '/')) # , '.%s/' % (time_stamp)))
-    config['trainer']['save_dir'] = ''.join((config['trainer']['save_dir'], config['task_name'], '/')) # , '.%s/' % (time_stamp))) 
-    config['trainer']['output_dir'] = ''.join((config['trainer']['output_dir'], config['task_name'], '/')) # , '.%s/' % (time_stamp)))
-    make_dir(config['trainer']['log_dir'])
-    make_dir(config['trainer']['save_dir'])
-    make_dir(config['trainer']['output_dir'])
+    config['trainer']['args']['log_dir'] = ''.join((config['trainer']['args']['log_dir'], config['task_name'], '/')) # , '.%s/' % (time_stamp)))
+    config['trainer']['args']['save_dir'] = ''.join((config['trainer']['args']['save_dir'], config['task_name'], '/')) # , '.%s/' % (time_stamp))) 
+    config['trainer']['args']['output_dir'] = ''.join((config['trainer']['args']['output_dir'], config['task_name'], '/')) # , '.%s/' % (time_stamp)))
+    make_dir(config['trainer']['args']['log_dir'])
+    make_dir(config['trainer']['args']['save_dir'])
+    make_dir(config['trainer']['args']['output_dir'])
     return config

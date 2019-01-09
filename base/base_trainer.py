@@ -32,18 +32,18 @@ class BaseTrainer:
         self.optimizer = optimizer
         self.train_logger = train_logger
 
-        self.cfg_trainer = config['trainer']
-        self.epochs = self.cfg_trainer['epochs']
-        self.save_period = self.cfg_trainer['save_period']
+        self.trainer_config = config['trainer']['args']
+        self.epochs = self.trainer_config['epochs']
+        self.save_period = self.trainer_config['save_period']
         self.start_epoch = 1
         self.global_step = 0
 
         # setup visualization writer instance
-        #  writer_save_path = ''.join((self.cfg_trainer['log_dir'], 'tensorboardx.log'))
-        self.writer = SummaryWriter(self.cfg_trainer['log_dir']) # tensorboard 建立的是目录，它会自动产生文件名，不需要手动指定
+        #  writer_save_path = ''.join((self.trainer_config['log_dir'], 'tensorboardx.log'))
+        self.writer = SummaryWriter(self.trainer_config['log_dir']) # tensorboard 建立的是目录，它会自动产生文件名，不需要手动指定
 
         #  Save configuration file into checkpoint directory:
-        #  config_save_path = os.path.join(self.cfg_trainer['save_dir'], 'config.json')
+        #  config_save_path = os.path.join(self.trainer_config['save_dir'], 'config.json')
         #  with open(config_save_path, 'w') as handle:
         #      json.dump(config, handle, indent=4, sort_keys=False)
 
@@ -58,7 +58,7 @@ class BaseTrainer:
             train_result = self._train_epoch(epoch)
 
             val_result = {}
-            if self.config['trainer']['do_validation'] and self.do_validation:
+            if self.trainer_config['do_validation'] and self.do_validation:
                 val_result = self._valid_epoch(epoch)
 
             # save logged informations into log dict
@@ -97,7 +97,7 @@ class BaseTrainer:
             #  'monitor_best': self.mnt_best,
             'config': self.config
         }
-        filename = os.path.join(self.config['trainer']['save_dir'], 'checkpoint-model_{}-epoch{}.pth'.format(model_name, epoch))
+        filename = os.path.join(self.trainer_config['save_dir'], 'checkpoint-model_{}-epoch{}.pth'.format(model_name, epoch))
         torch.save(state, filename)
         self.logger.info("Saving checkpoint: {} ...".format(filename))
         if save_best:
@@ -117,7 +117,7 @@ class BaseTrainer:
         self.mnt_best = checkpoint['monitor_best']
 
         # load architecture params from checkpoint.
-        if checkpoint['config']['arch'] != self.config['arch']:
+        if checkpoint['config']['model'] != self.config['model']:
             self.logger.warning('Warning: Architecture configuration given in config file is different from that of checkpoint. ' + \
                                 'This may yield an exception while state_dict is being loaded.')
         self.model.load_state_dict(checkpoint['state_dict'])

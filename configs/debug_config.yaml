@@ -1,0 +1,65 @@
+task_name: debug.ae.1.0109  # this is the name of the task
+device: 0           # if you do not want to use GPU, set null
+log_level: debug
+seed: 1667
+loss: nll_loss
+metrics: rouge_metric
+
+optimizer: 
+    type: Adam
+    args:
+        lr: 0.001
+    
+trainer:
+    type: AE_trainer
+    args:
+        epochs: 100
+        save_period: 10000000000000
+        print_loss_every: 20                   # print train loss every [num] batches, related to the batch size
+        print_token_every: 100              # print training tokens to see the result. print every [num] batches 
+        print_val_token_every: 50         # print val tokens to see the result. print every [num] batches 
+        do_validation: True
+        max_norm: 1.0
+        save_dir: checkpoints/
+        log_dir: logs/
+        teacher_forcing_ratio: 0.9
+        output_dir: outputs/
+
+data_loader:
+    train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
+    val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
+    test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
+    batch_size: 10
+    shuffle: False
+    val_data_quota: 1000
+    data_quota: 1000
+
+
+vocabulary: 
+    vocab_file: ./data/dm_data_from_summaRuNNer/origin_data/w2i.json
+    sent_trunc: 120
+    doc_trunc: 50
+    split_token: \n
+
+
+lr_scheduler: 
+    type: StepLR
+    args: 
+        step_size: 50
+        gamma: 0.1
+    
+model: 
+    type: ae
+    args: 
+        embed_dim: 100
+        vocab_size: 153826
+        hidden_size: 128
+        max_len: 120
+        sos_id: 2
+        eos_id: 3
+        rnn_cell: gru
+        input_dropout_p: 0.0 
+        dropout_p: 0.0 
+        bidirectional: True
+        use_attention: False
+        pretrained_embed: ./data/cnn_dailymail_data/finished_dm_data/embed 

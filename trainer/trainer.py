@@ -27,7 +27,7 @@ class Trainer(BaseTrainer):
         self.do_validation = self.valid_data_loader is not None
         self.do_metrics = metrics is not None 
         self.lr_scheduler = lr_scheduler
-        self.max_norm = config['trainer']['max_norm']
+        self.max_norm = self.trainer_config['max_norm']
         #  self.log_step = int(np.sqrt(data_loader.batch_size))
 
     def _eval_metrics(self, predicts, reference):
@@ -46,7 +46,7 @@ class Trainer(BaseTrainer):
 
     def _update_tfr(self):
         tfr = max(math.exp(-(self.global_step)/200000-0.1), 0.5)
-        #  tfr = self.config['trainer']['teacher_forcing_ratio'] - self.global_step/len(self.data_loader)
+        #  tfr = self.trainer_config['teacher_forcing_ratio'] - self.global_step/len(self.data_loader)
         return tfr 
 
     def _compute_loss(self, predicts, labels):
@@ -123,14 +123,14 @@ class Trainer(BaseTrainer):
             #  self.optimizer.step()
             #  total_loss += loss.item()
             #
-            #  if self.global_step % self.config['trainer']['print_loss_every'] == 0:
-            #      avg_loss = total_loss/self.config['trainer']['print_loss_every']
+            #  if self.global_step % self.trainer_config['print_loss_every'] == 0:
+            #      avg_loss = total_loss/self.trainer_config['print_loss_every']
             #      self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f'
             #              %(epoch, self.global_step, step_in_epoch, avg_loss))
             #      self.writer.add_scalar('train/loss', avg_loss, self.global_step)
             #      total_loss = 0
             #
-            #  if self.global_step % self.config['trainer']['print_token_every']== 0:
+            #  if self.global_step % self.trainer_config['print_token_every']== 0:
             #      hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
             #      self.logger.info(['hyp: ', hyp])
             #      self.logger.info(['ref: ', reference])
@@ -171,7 +171,7 @@ class Trainer(BaseTrainer):
                 total_val_loss += loss.item()
                 val_metrics.append(self._eval_metrics(predicts, reference))
 
-                if step % self.config['trainer']['print_val_token_every']== 0:
+                if step % self.trainer_config['print_val_token_every']== 0:
                     hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
                     self.logger.info(['hyp: ', hyp])
                     self.logger.info(['ref: ', reference])

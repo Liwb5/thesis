@@ -15,7 +15,8 @@ from torch.utils.data import DataLoader
 import models
 import models.loss as module_loss
 import models.metrics as module_metrics
-from trainer import Trainer, AE_trainer
+#  from trainer import Trainer, AE_trainer
+import trainer as module_trainer
 from utils import Logger
 from utils.config import *
 from data_loader import Vocab
@@ -37,7 +38,7 @@ def main(config, resume):
     set_seed(config['seed'])
 
     log_format='%(asctime)s-%(filename)s[line:%(lineno)d]-%(levelname)s: %(message)s'
-    logging.basicConfig(filename = ''.join((config['trainer']['log_dir'], 'log')),
+    logging.basicConfig(filename = ''.join((config['trainer']['args']['log_dir'], 'log')),
                         filemode = 'a',
                         level = getattr(logging, config['log_level'].upper()),
                         format = log_format)
@@ -77,7 +78,8 @@ def main(config, resume):
     optimizer = getattr(torch.optim, config['optimizer']['type'])(trainable_params, **config['optimizer']['args'])
     lr_scheduler = getattr(torch.optim.lr_scheduler, config['lr_scheduler']['type'])(optimizer, **config['lr_scheduler']['args'])
 
-    trainer = AE_trainer(model, loss,  optimizer,
+    trainer = getattr(module_trainer, config['trainer']['type'])(
+                      model, loss,  optimizer,
                       resume=resume,
                       config=config,
                       data_loader=data_loader,
