@@ -91,6 +91,7 @@ class BaseTrainer:
         state = {
             'model': model_name,
             'epoch': epoch,
+            'global_step': self.global_step, 
             'logger': self.train_logger,
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
@@ -114,6 +115,7 @@ class BaseTrainer:
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
         checkpoint = torch.load(resume_path)
         self.start_epoch = checkpoint['epoch'] + 1
+        self.global_step = checkpoint['global_step'] + 1
         #  self.mnt_best = checkpoint['monitor_best']
 
         # load architecture params from checkpoint.
