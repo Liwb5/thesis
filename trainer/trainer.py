@@ -140,7 +140,8 @@ class Trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             tfr = self._update_tfr()
-            self.writer.add_scalar('train/tfr', tfr, self.global_step)
+            if self.use_summaryWriter:
+                self.writer.add_scalar('train/tfr', tfr, self.global_step)
             att_probs, selected_logprobes, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
 
             #  self.logger.debug(pformat(['hyp: ', hyps]))
@@ -165,12 +166,15 @@ class Trainer(BaseTrainer):
             total_reward += final_R.sum().item()
 
             if self.global_step % self.trainer_config['print_loss_every'] == 0:
-                avg_loss = total_loss/self.trainer_config['print_loss_every']
-                avg_reward = total_reward/self.trainer_config['print_loss_every']
+                avg_loss = total_loss/self.trainer_config['print_loss_every']/self.batch_size
+                avg_reward = total_reward/self.trainer_config['print_loss_every']/self.batch_size
                 self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f Reward: %f'
                         %(epoch, self.global_step, step_in_epoch, avg_loss, avg_reward))
-                self.writer.add_scalar('train/loss', avg_loss, self.global_step)
+                if self.use_summaryWriter:
+                    self.writer.add_scalar('train/loss', avg_loss, self.global_step)
+                    self.writer.add_scalar('train/rewards', avg_reward, self.global_step)
                 total_loss = 0
+                total_reward = 0
 
             #  if self.global_step % self.trainer_config['print_token_every']== 0:
             #      hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())

@@ -32,6 +32,8 @@ class BaseTrainer:
         self.optimizer = optimizer
         self.train_logger = train_logger
 
+        self.use_summaryWriter = config['use_summaryWriter']
+        self.batch_size = self.config['data_loader']['batch_size']
         self.trainer_config = config['trainer']['args']
         self.epochs = self.trainer_config['epochs']
         self.save_period = self.trainer_config['save_period']
