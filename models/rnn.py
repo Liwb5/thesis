@@ -137,7 +137,7 @@ class stack_encoder(nn.Module):
             doc_lens(list): (B, 1)
         """
         sent_lens = torch.sum(torch.sign(x), dim=1).data
-        logging.debug(['encoder: sent_lens: ', sent_lens])
+        #  logging.debug(['encoder: sent_lens: ', sent_lens])
         word_embed = self.embedding(x) # batch_size first 
 
         # word level RNN
@@ -258,10 +258,10 @@ class pn_decoder(nn.Module):
             # h_t(B, hidden_size); alpha(B, seq_len)
             return h_t, alpha 
 
-        logging.debug(['sent_embed(inputs in decoder) (B, max_doc_len[3], 2H): ', inputs.data.cpu().numpy()])
+        #  logging.debug(['sent_embed(inputs in decoder) (B, max_doc_len[3], 2H): ', inputs.data.cpu().numpy()])
         for _ in range(min(self.max_dec_len, min(docs_lens))):
             hidden, att_probs = step(decoder_input, hidden)
-            logging.debug(['step output att_probs(attention probs)(expected B, max_doc_len[3]): ', att_probs.data.cpu().numpy()])
+            #  logging.debug(['step output att_probs(attention probs)(expected B, max_doc_len[3]): ', att_probs.data.cpu().numpy()])
 
             # Masking selected inputs
             #  masked_outs = att_probs * mask  # unnecessary operation, because mask will be updated in every step
@@ -272,7 +272,7 @@ class pn_decoder(nn.Module):
             # max_probs: (B, 1) indices: (B, 1) 
             #  max_probs, indices = masked_outs.max(1)
             max_probs, indices = att_probs.max(1)
-            logging.debug(['selected indices (expected B, 1): ', indices.data.cpu().numpy()])
+            #  logging.debug(['selected indices (expected B, 1): ', indices.data.cpu().numpy()])
 
             # runner 每一行都是从0,1,2,3递增，one_hot_pointers是为了得到当前step所选择的对应位置
             one_hot_pointers = (runner == indices.unsqueeze(1).expand(-1, att_probs.size()[1])).float()
@@ -283,7 +283,7 @@ class pn_decoder(nn.Module):
             # Get embedded inputs by max indices
             embedding_mask = one_hot_pointers.unsqueeze(2).expand(-1, -1, self.hidden_size).byte()
             decoder_input = inputs[embedding_mask.data].view(batch_size, self.hidden_size)
-            logging.debug(['decoder input in every step(B, 2H): ', decoder_input.data.cpu().numpy()])
+            #  logging.debug(['decoder input in every step(B, 2H): ', decoder_input.data.cpu().numpy()])
 
             outputs.append(att_probs.unsqueeze(0))
             selected_probs.append(max_probs.unsqueeze(1))
@@ -293,10 +293,10 @@ class pn_decoder(nn.Module):
         pointers = torch.cat(pointers, 1) # (B, max_dec_len)
         selected_probs = torch.cat(selected_probs, 1) # (B, max_dec_len)
         logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.size()])
-        logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.data.cpu().numpy()])
+        #  logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.data.cpu().numpy()])
         logging.debug(['pointers (B, min_doc_lens): ', pointers.size()])
-        logging.debug(['pointers (B, min_doc_lens): ', pointers.data.cpu().numpy()])
-        logging.debug(['selected_probs (B, min_doc_lens): ', selected_probs.data.cpu().numpy()])
+        #  logging.debug(['pointers (B, min_doc_lens): ', pointers.data.cpu().numpy()])
+        #  logging.debug(['selected_probs (B, min_doc_lens): ', selected_probs.data.cpu().numpy()])
 
         return outputs, selected_probs, pointers, hidden
             

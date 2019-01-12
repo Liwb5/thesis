@@ -77,6 +77,8 @@ class Vocab():
         labels_lens = []
         for label in labels:
             label = label.split(self.split_token)
+            max_label_num = min(self.doc_trunc, len(label))
+            label = label[:max_label_num]
             target = []
             for i, key in enumerate(label):
                 if key == '1':

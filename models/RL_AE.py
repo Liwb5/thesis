@@ -47,7 +47,7 @@ class RL_AE(BaseModel):
         # enc_out: for attention, enc_hidden_t: final hidden state (representation), sents_embed: like word embedding
         enc_out, enc_hidden_t, sents_embed = self.stack_encoder(docs_features, doc_lens) # sents_embed:(B, max(doc_lens), 2H)
 
-        sents_embed2 = torch.cat([ torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(sents_embed, labels) ]) # (B, labels_max_len, 2H)
+        #  sents_embed2 = torch.cat([ torch.index_select(a, 0, i).unsqueeze(0) for a, i in zip(sents_embed, labels) ]) # (B, labels_max_len, 2H)
 
         dec_input0 = self.dec_input0.unsqueeze(0).expand(sents_embed.size(0), -1)
         logging.debug(['dec_input0(expected B, 2H[8]): ', dec_input0.size()])

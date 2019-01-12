@@ -30,24 +30,30 @@ class Trainer(BaseTrainer):
         self.max_norm = self.trainer_config['max_norm']
         #  self.log_step = int(np.sqrt(data_loader.batch_size))
 
-    def _eval_metrics(self, predicts, reference):
-        hypothesis = self.vocab.features_to_tokens(predicts.numpy().tolist())
+    def _eval_metrics(self, docs, pointers, reference):
+        #  hypothesis = self.vocab.features_to_tokens(predicts.numpy().tolist())
+        hypothesis = self.vocab.extract_summary_from_index(docs, pointers)
         results = self.metrics(hypothesis, reference)
         return results
         
-    def _compute_reward(self, hyps, ref):
+    def _compute_reward(self, dataset, pointers, ref):
         R = []
-        for hyp in hyps:
+        batch_size = pointers.size(0)
+        for i in range(pointers.size(1)):
+            hyp = self.vocab.extract_summary_from_index(dataset['doc'], pointers[:,:i+1].view(batch_size, -1))
             result = self.metrics(hyp, ref, avg=False)
             # maybe can divide to 3
             r = [item['rouge-1']['r'] + item['rouge-2']['r'] + item['rouge-l']['r'] \
-                    for item in result]
+                for item in result]
             R.append(r)
+        
         R = torch.FloatTensor(R).transpose(0,1)
-        self.logger.debug(['origin R: ', R])
-        B = R.size(0)
-        R = R - torch.cat((torch.zeros((B,1)), R[:,:-1].view(B,-1)), 1)
-        return R
+        final_R = R[:,-1]
+        R = R - torch.cat((torch.zeros((batch_size,1)), R[:,:-1].view(batch_size,-1)), 1)
+        R = Variable(R, requires_grad=False)
+        if self.device is not None:
+            R = R.cuda()
+        return R, final_R
 
 
     #  def predict(self, predicts, target):
@@ -78,6 +84,11 @@ class Trainer(BaseTrainer):
         return loss
 
 
+    def _compute_loss2(self, logprobs, R):
+        loss = logprobs.mul(R)
+        loss = -loss.sum().sum()
+        return loss
+
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
@@ -98,6 +109,7 @@ class Trainer(BaseTrainer):
     
         step_in_epoch = 0
         total_loss = 0
+        total_reward = 0
         for step, dataset in enumerate(self.data_loader):
             self.global_step += 1
             step_in_epoch += 1
@@ -109,13 +121,13 @@ class Trainer(BaseTrainer):
             docs_features = Variable(docs_features) 
             sum_features, sum_word_lens, sum_target = Variable(sum_features), Variable(sum_word_lens), Variable(sum_target) 
             labels = Variable(labels)
-            self.logger.debug(pformat(['docs_features: ', docs_features.data.numpy()]))
-            self.logger.debug(pformat(['docs_tokens: ', docs_tokens]))
+            #  self.logger.debug(pformat(['docs_features: ', docs_features.data.numpy()]))
+            #  self.logger.debug(pformat(['docs_tokens: ', docs_tokens]))
             self.logger.debug(['doc_lens: ', doc_lens])
             #  self.logger.debug(pformat(['sum_features: ', sum_features.data.numpy()]))
             #  self.logger.debug(pformat(['sum_target: ', sum_target.data.numpy()]))
             #  self.logger.debug(['sum_word_lens: ', sum_word_lens])
-            #  self.logger.debug(pformat(['labels: ', labels.data.numpy()]))
+            self.logger.debug(pformat(['labels: ', labels.data.numpy()]))
             #  self.logger.debug(['label_lens: ', label_lens])
             if self.device is not None:
                 docs_features = docs_features.cuda()
@@ -129,36 +141,37 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
             tfr = self._update_tfr()
             self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            att_probs, selected_probes, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
+            att_probs, selected_logprobes, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
 
-            hyps = []
-            for i in range(pointers.size(1)):
-                hyp = self.vocab.extract_summary_from_index(dataset['doc'], pointers[:,:i+1].view(pointers.size(0), -1))
-                hyps.append(hyp)
-            self.logger.debug(pformat(['hyp: ', hyps]))
-            self.logger.debug(pformat(['sum_ref: ', sum_ref]))
-            R = self._compute_reward(hyps, sum_ref)
-            self.logger.debug(pformat(['R: ', R]))
+            #  self.logger.debug(pformat(['hyp: ', hyps]))
+            #  self.logger.debug(pformat(['sum_ref: ', sum_ref]))
+            R, final_R = self._compute_reward(dataset, pointers, sum_ref)
+            #  self.logger.debug(pformat(['R: ', R]))
+            loss = self._compute_loss2(selected_logprobes, R)
+            #  loss = selected_logprobes.mul(R)
+            #  loss = loss.sum().sum()
+            #  self.logger.debug(pformat(['loss: ', loss.item()]))
             #  loss = self._compute_loss()
 
-            # TODO how to compute reward. see RL_combin how to do it 
+            # DONE how to compute reward. see RL_combin how to do it 
             #  selected_docs_features = docs_features[pred_index.byte().data].view(docs_features.size(0), pred_index.size(1))
             #  R = self.eval_model.compute_reward(docs_features, summaries_features)
-            
             #  loss = self._compute_loss(probs, target[:,1:])
-            #  loss.backward()
-            #  if self.max_norm is not None:
-            #      clip_grad_norm_(self.model.parameters(), self.max_norm)
-            #  self.optimizer.step()
-            #  total_loss += loss.item()
-            #
-            #  if self.global_step % self.trainer_config['print_loss_every'] == 0:
-            #      avg_loss = total_loss/self.trainer_config['print_loss_every']
-            #      self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f'
-            #              %(epoch, self.global_step, step_in_epoch, avg_loss))
-            #      self.writer.add_scalar('train/loss', avg_loss, self.global_step)
-            #      total_loss = 0
-            #
+            loss.backward()
+            if self.max_norm is not None:
+                clip_grad_norm_(self.model.parameters(), self.max_norm)
+            self.optimizer.step()
+            total_loss += loss.item()
+            total_reward += final_R.sum().item()
+
+            if self.global_step % self.trainer_config['print_loss_every'] == 0:
+                avg_loss = total_loss/self.trainer_config['print_loss_every']
+                avg_reward = total_reward/self.trainer_config['print_loss_every']
+                self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f Reward: %f'
+                        %(epoch, self.global_step, step_in_epoch, avg_loss, avg_reward))
+                self.writer.add_scalar('train/loss', avg_loss, self.global_step)
+                total_loss = 0
+
             #  if self.global_step % self.trainer_config['print_token_every']== 0:
             #      hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
             #      self.logger.info(['hyp: ', hyp])
@@ -188,22 +201,31 @@ class Trainer(BaseTrainer):
         final_val_metrics = {m:{s: 0.0 for s in STATS} for m in METRICS}
         with torch.no_grad():
             for step, dataset in enumerate(self.valid_data_loader):
-                features, target, sents_len, reference = self.vocab.summary_to_features(dataset['summaries'])
-                features, target, sents_len  = Variable(features), Variable(target), Variable(sents_len)
+                docs_features, doc_lens, docs_tokens, \
+                    sum_features, sum_target, sum_word_lens, sum_ref, \
+                    labels, label_lens = self.vocab.data_to_features(dataset)
+
+                docs_features = Variable(docs_features) 
+                sum_features, sum_word_lens, sum_target = Variable(sum_features), Variable(sum_word_lens), Variable(sum_target) 
+                labels = Variable(labels)
+
                 if self.device is not None:
-                    features = features.cuda()
-                    target = target.cuda()
-                    sents_len = sents_len.cuda()
+                    docs_features = docs_features.cuda()
+                    #  doc_lens = doc_lens.cuda()
+                    sum_features = sum_features.cuda()
+                    sum_target = sum_target.cuda()
+                    sum_word_lens = sum_word_lens.cuda()
+                    labels = labels.cuda()
+                    #  label_lens = label_lens.cuda()
 
-                probs, predicts = self.model(features, target, sents_len, teacher_forcing_ratio=0)
-                loss = self._compute_loss(probs, target[:,1:])
-                total_val_loss += loss.item()
-                val_metrics.append(self._eval_metrics(predicts, reference))
+                att_probs, selected_logprobes, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0)
 
-                if step % self.trainer_config['print_val_token_every']== 0:
-                    hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
-                    self.logger.info(['hyp: ', hyp])
-                    self.logger.info(['ref: ', reference])
+                val_metrics.append(self._eval_metrics(dataset['doc'], pointers, sum_ref))
+
+                #  if step % self.trainer_config['print_val_token_every']== 0:
+                #      hyp = self.vocab.features_to_tokens(predicts.numpy().tolist())
+                #      self.logger.info(['hyp: ', hyp])
+                #      self.logger.info(['ref: ', reference])
 
 
             for i in range(len(val_metrics)):
