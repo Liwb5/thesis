@@ -1,6 +1,7 @@
 task_name: train.ae.1.0111  # this is the name of the task
 device: 0                   # if you do not want to use GPU, set null
 log_level: debug
+use_summaryWriter: False
 seed: 1667
 loss: nll_loss
 metrics: rouge_metric
@@ -57,6 +58,7 @@ model:
         max_len: 120
         sos_id: 2
         eos_id: 3
+        max_selected: 2
         rnn_cell: gru
         input_dropout_p: 0.0 
         dropout_p: 0.0 
