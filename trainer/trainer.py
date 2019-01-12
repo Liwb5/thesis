@@ -100,7 +100,7 @@ class Trainer(BaseTrainer):
             #  self.logger.debug(pformat(['sum_features: ', sum_features.data.numpy()]))
             #  self.logger.debug(pformat(['sum_target: ', sum_target.data.numpy()]))
             #  self.logger.debug(['sum_word_lens: ', sum_word_lens])
-            #  self.logger.debug(pformat(['sum_ref: ', sum_ref]))
+            self.logger.debug(pformat(['sum_ref: ', sum_ref]))
             #  self.logger.debug(pformat(['labels: ', labels.data.numpy()]))
             #  self.logger.debug(['label_lens: ', label_lens])
             if self.device is not None:
@@ -115,8 +115,15 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
             tfr = self._update_tfr()
             self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            probs, predicts = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
-            loss = self._compute_loss(probs, target[:,1:])
+            probs, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
+
+            hyp = self.vocab.extract_summary_from_index(dataset['doc'], pointers)
+            self.logger.debug(pformat(['hyp: ', hyp]))
+            # TODO how to compute reward. see RL_combin how to do it 
+            #  selected_docs_features = docs_features[pred_index.byte().data].view(docs_features.size(0), pred_index.size(1))
+            #  R = self.eval_model.compute_reward(docs_features, summaries_features)
+            
+            #  loss = self._compute_loss(probs, target[:,1:])
             #  loss.backward()
             #  if self.max_norm is not None:
             #      clip_grad_norm_(self.model.parameters(), self.max_norm)

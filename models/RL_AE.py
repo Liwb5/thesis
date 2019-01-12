@@ -51,16 +51,13 @@ class RL_AE(BaseModel):
 
         dec_input0 = self.dec_input0.unsqueeze(0).expand(sents_embed.size(0), -1)
         logging.debug(['dec_input0(expected B, 2H[8]): ', dec_input0.size()])
-        dec_outputs, pred_index,  hidden = self.pn_decoder(inputs = sents_embed, 
+        att_probs, pointers,  hidden = self.pn_decoder(inputs = sents_embed, 
                                                         decoder_input = dec_input0,
                                                         hidden = enc_hidden_t,
                                                         context = enc_out,
                                                         docs_lens = doc_lens)
 
-        # TODO how to compute reward. see RL_combin how to do it 
-        #  selected_docs_features = docs_features[pred_index.byte().data].view(docs_features.size(0), pred_index.size(1))
-
-        #  R = self.eval_model.compute_reward(docs_features, summaries_features)
+        return att_probs, pointers
 
 
 

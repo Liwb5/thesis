@@ -180,7 +180,7 @@ class pn_decoder(nn.Module):
         self.sos_id = sos_id
         self.eval_model = eval_model
         self.args = args
-        self.max_dec_len = max_dec_len
+        self.max_dec_len = args.max_selected
 
         self.init_input = None
 

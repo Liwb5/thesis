@@ -167,7 +167,7 @@ class Vocab():
                 words = words[:self.sent_trunc]
             max_sent_len = len(words) if len(words) > max_sent_len else max_sent_len
             batch_sents.append(words)
-            origin_tokens.append(''.join(words))
+            origin_tokens.append(' '.join(words))
 
         features = []
         for sent in batch_sents:
@@ -225,8 +225,8 @@ class Vocab():
         # 让一个batch中的句子按照长度排序
         #  logging.debug(['origin summaries: ', sents_list])
         #  logging.debug(['origin sents_len: ', sents_len])
-        sents_list = sorted(sents_list, key=lambda x: len(x), reverse = True)
-        sents_len = sorted(sents_len, reverse = True)
+        #  sents_list = sorted(sents_list, key=lambda x: len(x), reverse = True)
+        #  sents_len = sorted(sents_len, reverse = True)
         #  logging.debug(['origin summaries: ', sents_list])
         #  logging.debug(['origin sents_len: ', sents_len])
 
@@ -238,6 +238,18 @@ class Vocab():
 
         # sents_len is the words number of summaries. Not just a sentence
         return input_features, label_features, sents_len, reference
+
+    def extract_summary_from_index(self, docs, index):
+        if not isinstance(docs,list):
+            docs = [docs]
+
+        hyp = []
+        for doc, idx in zip(docs, index):
+            sents = doc.split(self.split_token)
+            summary = [sents[i] for i in idx]
+            hyp.append(' '.join(summary))
+
+        return hyp
 
 
     def add_vocab(self, vocab_file):

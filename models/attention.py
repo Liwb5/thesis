@@ -29,7 +29,7 @@ class Attention(nn.Module):
         self.V = Parameter(torch.FloatTensor(hidden_dim), requires_grad=True)
         self._inf = Parameter(torch.FloatTensor([float('-inf')]), requires_grad=False)
         self.tanh = nn.Tanh()
-        self.softmax= nn.Softmax()
+        self.softmax= nn.Softmax(dim=1)
 
         # Initialize vector V
         nn.init.uniform(self.V, -1, 1)
