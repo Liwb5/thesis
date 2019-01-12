@@ -51,13 +51,13 @@ class RL_AE(BaseModel):
 
         dec_input0 = self.dec_input0.unsqueeze(0).expand(sents_embed.size(0), -1)
         logging.debug(['dec_input0(expected B, 2H[8]): ', dec_input0.size()])
-        att_probs, pointers,  hidden = self.pn_decoder(inputs = sents_embed, 
+        att_probs, selected_probs, pointers,  hidden = self.pn_decoder(inputs = sents_embed, 
                                                         decoder_input = dec_input0,
                                                         hidden = enc_hidden_t,
                                                         context = enc_out,
                                                         docs_lens = doc_lens)
 
-        return att_probs, pointers
+        return att_probs, selected_probs, pointers
 
 
 

@@ -35,6 +35,21 @@ class Trainer(BaseTrainer):
         results = self.metrics(hypothesis, reference)
         return results
         
+    def _compute_reward(self, hyps, ref):
+        R = []
+        for hyp in hyps:
+            result = self.metrics(hyp, ref, avg=False)
+            # maybe can divide to 3
+            r = [item['rouge-1']['r'] + item['rouge-2']['r'] + item['rouge-l']['r'] \
+                    for item in result]
+            R.append(r)
+        R = torch.FloatTensor(R).transpose(0,1)
+        self.logger.debug(['origin R: ', R])
+        B = R.size(0)
+        R = R - torch.cat((torch.zeros((B,1)), R[:,:-1].view(B,-1)), 1)
+        return R
+
+
     #  def predict(self, predicts, target):
     #      """
     #      @ target: Varialbe, (B, L)
@@ -100,7 +115,6 @@ class Trainer(BaseTrainer):
             #  self.logger.debug(pformat(['sum_features: ', sum_features.data.numpy()]))
             #  self.logger.debug(pformat(['sum_target: ', sum_target.data.numpy()]))
             #  self.logger.debug(['sum_word_lens: ', sum_word_lens])
-            self.logger.debug(pformat(['sum_ref: ', sum_ref]))
             #  self.logger.debug(pformat(['labels: ', labels.data.numpy()]))
             #  self.logger.debug(['label_lens: ', label_lens])
             if self.device is not None:
@@ -115,10 +129,18 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
             tfr = self._update_tfr()
             self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            probs, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
+            att_probs, selected_probes, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
 
-            hyp = self.vocab.extract_summary_from_index(dataset['doc'], pointers)
-            self.logger.debug(pformat(['hyp: ', hyp]))
+            hyps = []
+            for i in range(pointers.size(1)):
+                hyp = self.vocab.extract_summary_from_index(dataset['doc'], pointers[:,:i+1].view(pointers.size(0), -1))
+                hyps.append(hyp)
+            self.logger.debug(pformat(['hyp: ', hyps]))
+            self.logger.debug(pformat(['sum_ref: ', sum_ref]))
+            R = self._compute_reward(hyps, sum_ref)
+            self.logger.debug(pformat(['R: ', R]))
+            #  loss = self._compute_loss()
+
             # TODO how to compute reward. see RL_combin how to do it 
             #  selected_docs_features = docs_features[pred_index.byte().data].view(docs_features.size(0), pred_index.size(1))
             #  R = self.eval_model.compute_reward(docs_features, summaries_features)

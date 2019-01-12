@@ -1,6 +1,6 @@
 from rouge import Rouge
 
-def rouge_metric(hyp, ref):
+def rouge_metric(hyp, ref, avg=True):
     """
     Calculate rouge metric.
 
@@ -11,6 +11,6 @@ def rouge_metric(hyp, ref):
     rouge = Rouge()
     # if avg=False, returns a list of n dicts.
     # if avg=True, returns a single dict with average values.
-    scores = rouge.get_scores(hyp, ref, avg=True) 
+    scores = rouge.get_scores(hyp, ref, avg=avg) 
     return scores  #{"rouge-1": {"f": _, "p": _, "r": _}, "rouge-2" : { ..     }, "rouge-3": { ... }}
 

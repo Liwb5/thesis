@@ -239,6 +239,7 @@ class pn_decoder(nn.Module):
 
         outputs = []
         pointers = []
+        selected_probs = []
 
         def step(x, hidden):
             """
@@ -285,16 +286,19 @@ class pn_decoder(nn.Module):
             logging.debug(['decoder input in every step(B, 2H): ', decoder_input.data.cpu().numpy()])
 
             outputs.append(att_probs.unsqueeze(0))
+            selected_probs.append(max_probs.unsqueeze(1))
             pointers.append(indices.unsqueeze(1))
 
         outputs = torch.cat(outputs).permute(1, 0, 2)  #(B, max_dec_len, seq_len)
         pointers = torch.cat(pointers, 1) # (B, max_dec_len)
+        selected_probs = torch.cat(selected_probs, 1) # (B, max_dec_len)
         logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.size()])
         logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.data.cpu().numpy()])
         logging.debug(['pointers (B, min_doc_lens): ', pointers.size()])
         logging.debug(['pointers (B, min_doc_lens): ', pointers.data.cpu().numpy()])
+        logging.debug(['selected_probs (B, min_doc_lens): ', selected_probs.data.cpu().numpy()])
 
-        return outputs, pointers, hidden
+        return outputs, selected_probs, pointers, hidden
             
 
 class rnn_decoder(nn.Module):
