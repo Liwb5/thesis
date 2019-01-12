@@ -18,6 +18,7 @@ import models.metrics as module_metrics
 #  from trainer import Trainer, AE_trainer
 import trainer as module_trainer
 from utils import Logger
+from utils import StreamToLogger
 from utils.config import *
 from data_loader import Vocab
 from data_loader import Dataset
@@ -34,14 +35,19 @@ def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
 
+def logToStderr(config):
+    stderr_logger = logging.getLogger('stderr')
+    sys.stderr = StreamToLogger(stderr_logger,getattr(logging, config['log_level'].upper()))
+
 def main(config, resume):
     set_seed(config['seed'])
 
-    log_format='%(asctime)s-%(filename)s[line:%(lineno)d]-%(levelname)s: %(message)s'
+    log_format='%(asctime)s-%(levelname)s-%(name)s: %(message)s'
     logging.basicConfig(filename = ''.join((config['trainer']['args']['log_dir'], 'log')),
                         filemode = 'a',
                         level = getattr(logging, config['log_level'].upper()),
                         format = log_format)
+    logToStderr(config)
 
     logging.info(['config: ', pformat(config)])
     train_logger = Logger()
