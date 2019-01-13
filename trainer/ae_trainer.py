@@ -103,7 +103,8 @@ class AE_trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             tfr = self._update_tfr(epoch)
-            self.writer.add_scalar('train/tfr', tfr, self.global_step)
+            if self.use_summaryWriter:
+                self.writer.add_scalar('train/tfr', tfr, self.global_step)
             probs, predicts = self.model(sum_features, sum_target, sum_word_lens, tfr)
             loss = self._compute_loss(probs, sum_target[:,1:])
             loss.backward()
@@ -117,7 +118,8 @@ class AE_trainer(BaseTrainer):
                 log['train_loss'] = avg_loss
                 self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f'
                         %(epoch, self.global_step, step_in_epoch, avg_loss))
-                self.writer.add_scalar('train/loss', avg_loss, self.global_step)
+                if self.use_summaryWriter:
+                    self.writer.add_scalar('train/loss', avg_loss, self.global_step)
                 total_loss = 0
 
             if self.global_step % self.trainer_config['print_token_every']== 0:

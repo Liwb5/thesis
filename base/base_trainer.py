@@ -42,7 +42,8 @@ class BaseTrainer:
 
         # setup visualization writer instance
         #  writer_save_path = ''.join((self.trainer_config['log_dir'], 'tensorboardx.log'))
-        self.writer = SummaryWriter(self.trainer_config['log_dir']) # tensorboard 建立的是目录，它会自动产生文件名，不需要手动指定
+        if self.use_summaryWriter:
+            self.writer = SummaryWriter(self.trainer_config['log_dir']) # tensorboard 建立的是目录，它会自动产生文件名，不需要手动指定
 
         #  Save configuration file into checkpoint directory:
         #  config_save_path = os.path.join(self.trainer_config['save_dir'], 'config.json')
