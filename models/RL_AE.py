@@ -37,12 +37,13 @@ class RL_AE(BaseModel):
                                     use_attention = True,
                                     embed = self.embedding, # TODO pn_decoder do not need embedding
                                     args = args,
-                                    eval_model = None)
+                                    eval_model = None,
+                                    device = device)
 
         self.eval_model = eval_model # TODO eval_model are auto encoder 
         self.dec_input0 = Parameter(torch.FloatTensor(self.dec_hidden_size), requires_grad=False)
 
-    def forward(self, docs_features, doc_lens, summaries_features, summaries_lens, labels, labels_len, tfr):
+    def forward(self, docs_features, doc_lens, summaries_features, summaries_lens, labels, labels_len, tfr, epsilon=0):
 
         # enc_out: for attention, enc_hidden_t: final hidden state (representation), sents_embed: like word embedding
         enc_out, enc_hidden_t, sents_embed = self.stack_encoder(docs_features, doc_lens) # sents_embed:(B, max(doc_lens), 2H)
@@ -55,7 +56,8 @@ class RL_AE(BaseModel):
                                                         decoder_input = dec_input0,
                                                         hidden = enc_hidden_t,
                                                         context = enc_out,
-                                                        docs_lens = doc_lens)
+                                                        docs_lens = doc_lens,
+                                                        epsilon = epsilon)
 
         return att_probs, selected_probs, pointers
 

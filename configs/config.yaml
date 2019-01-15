@@ -64,4 +64,5 @@ model:
         dropout_p: 0.0 
         bidirectional: True
         use_attention: False
+        select_mode: random
         pretrained_embed: ./data/cnn_dailymail_data/finished_dm_data/embed 

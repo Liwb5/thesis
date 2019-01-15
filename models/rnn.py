@@ -1,6 +1,8 @@
 # coding:utf-8
 from pprint import pprint, pformat
 import logging
+import numpy as np
+import random
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
@@ -165,7 +167,8 @@ class pn_decoder(nn.Module):
             sos_id, eos_id,
             n_layers=1, rnn_cell='gru', bidirectional=False,
             input_dropout_p=0, dropout_p=0, use_attention=False,
-            embed=None, args = None, eval_model=None, max_dec_len=3):
+            embed=None, args = None, eval_model=None, max_dec_len=3, 
+            device=None):
 
         super(pn_decoder, self).__init__()
         self.bidirectional_encoder = bidirectional
@@ -181,6 +184,8 @@ class pn_decoder(nn.Module):
         self.eval_model = eval_model
         self.args = args
         self.max_dec_len = args.max_selected
+        self.select_mode = args.select_mode
+        self.device = device
 
         self.init_input = None
 
@@ -214,7 +219,7 @@ class pn_decoder(nn.Module):
             mask[i][lens[i]:] = 0
         return mask
 
-    def forward(self, inputs, decoder_input, hidden, context, docs_lens):
+    def forward(self, inputs, decoder_input, hidden, context, docs_lens, epsilon=0):
         """
         Args:
             inputs(B, labels_len, hidden_size): sentence embedding, 每一步的decoder的输入从这里选择 
@@ -261,18 +266,19 @@ class pn_decoder(nn.Module):
         #  logging.debug(['sent_embed(inputs in decoder) (B, max_doc_len[3], 2H): ', inputs.data.cpu().numpy()])
         for _ in range(min(self.max_dec_len, min(docs_lens))):
             hidden, att_probs = step(decoder_input, hidden)
-            #  logging.debug(['step output att_probs(attention probs)(expected B, max_doc_len[3]): ', att_probs.data.cpu().numpy()])
+            logging.debug(['step output att_probs(attention probs)(expected B, max_doc_len[3]): ', att_probs.data.cpu().numpy()])
 
             # Masking selected inputs
-            #  masked_outs = att_probs * mask  # unnecessary operation, because mask will be updated in every step
+            #  masked_outs = att_probs * mask  # warning: do not use this operation because att_probs maybe negative number in log_softmax in Attention
             #  logging.debug(['masked_outs (expected B, max_doc_len[3]): ', mask.data.cpu().numpy()])
 
             # Get maximum probabilities and indices
             # TODO e-greedy sample 
             # max_probs: (B, 1) indices: (B, 1) 
             #  max_probs, indices = masked_outs.max(1)
-            max_probs, indices = att_probs.max(1)
-            #  logging.debug(['selected indices (expected B, 1): ', indices.data.cpu().numpy()])
+            #  selected_prob, indices = att_probs.max(1)
+            selected_prob, indices = self.select_sent_indices(att_probs, mask, epsilon)
+            logging.debug(['selected indices (expected B, 1): ', indices.data.cpu().numpy()])
 
             # runner 每一行都是从0,1,2,3递增，one_hot_pointers是为了得到当前step所选择的对应位置
             one_hot_pointers = (runner == indices.unsqueeze(1).expand(-1, att_probs.size()[1])).float()
@@ -286,7 +292,7 @@ class pn_decoder(nn.Module):
             #  logging.debug(['decoder input in every step(B, 2H): ', decoder_input.data.cpu().numpy()])
 
             outputs.append(att_probs.unsqueeze(0))
-            selected_probs.append(max_probs.unsqueeze(1))
+            selected_probs.append(selected_prob.unsqueeze(1))
             pointers.append(indices.unsqueeze(1))
 
         outputs = torch.cat(outputs).permute(1, 0, 2)  #(B, max_dec_len, seq_len)
@@ -299,7 +305,38 @@ class pn_decoder(nn.Module):
         #  logging.debug(['selected_probs (B, min_doc_lens): ', selected_probs.data.cpu().numpy()])
 
         return outputs, selected_probs, pointers, hidden
-            
+
+    def select_sent_indices(self, att_probs, mask, epsilon):
+        greedy = False if random.random() < epsilon else True 
+        if greedy:
+            selected_prob, indices = att_probs.max(1)
+
+        elif self.select_mode == 'random':  # random sample index
+            #  logging.debug('in random')
+            mask_arr = mask.data.cpu().numpy()
+            indices = []
+            for i in range(mask_arr.shape[0]):
+                indices.append(np.random.choice(np.where(mask_arr[i,:] == 1)[0]))
+            indices = torch.LongTensor(indices)
+            if self.device is not None:
+                indices = indices.cuda()
+            selected_prob = att_probs.gather(1, indices.view(-1,1)).squeeze(1)
+
+        elif self.select_mode == 'distribute': # sample index with distribution
+            #  logging.debug('in distribute')
+            att_probs_arr = att_probs.data.cpu().numpy()
+            length = att_probs_arr.shape[1]
+            indices = []
+            for i in range(att_probs_arr.shape[0]):
+                indices.append(np.random.choice(length, p = att_probs_arr[i,:]))
+            indices = torch.LongTensor(indices)
+            if self.device is not None:
+                indices = indices.cuda()
+            selected_prob = att_probs.gather(1, indices.view(-1,1)).squeeze(1)
+        else:
+            selected_prob, indices = att_probs.max(1)
+
+        return selected_prob, indices
 
 class rnn_decoder(nn.Module):
     def __init__(self, vocab_size, hidden_size,

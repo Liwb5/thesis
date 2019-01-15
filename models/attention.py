@@ -29,7 +29,7 @@ class Attention(nn.Module):
         self.V = Parameter(torch.FloatTensor(hidden_dim), requires_grad=True)
         self._inf = Parameter(torch.FloatTensor([float('-inf')]), requires_grad=False)
         self.tanh = nn.Tanh()
-        #  self.softmax= nn.Softmax(dim=1)
+        self.softmax= nn.Softmax(dim=1)
         #  self.log_softmax= F.log_softmax(dim=1)
 
         # Initialize vector V
@@ -61,8 +61,8 @@ class Attention(nn.Module):
         att = torch.bmm(V, self.tanh(inp + ctx)).squeeze(1)
         if len(att[mask]) > 0:
             att[mask] = self.inf[mask]
-        #  alpha = self.softmax(att)
-        alpha = F.log_softmax(att, dim=1)
+        alpha = self.softmax(att)
+        #  alpha = F.log_softmax(att, dim=1)
 
         hidden_state = torch.bmm(ctx, alpha.unsqueeze(2)).squeeze(2)
 

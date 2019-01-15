@@ -86,6 +86,9 @@ class Trainer(BaseTrainer):
         #  tfr = self.trainer_config['teacher_forcing_ratio'] - self.global_step/len(self.data_loader)
         return tfr 
 
+    def _update_e_greedy(self):
+        return self.trainer_config['epsilon']
+
     def _compute_loss(self, predicts, labels):
         """ @predicts:(B, seq_len, vocab_size) 
             @labels: (B, seq_len). 
@@ -103,7 +106,7 @@ class Trainer(BaseTrainer):
     def _compute_loss2(self, logprobs, R):
         num_samples = R.size(0) * R.size(1)
         loss = torch.mul(logprobs, R).view(-1)
-        loss = -loss.sum()/ num_samples
+        loss = loss.sum()/ num_samples
         return loss
 
     def _train_epoch(self, epoch):
@@ -157,9 +160,10 @@ class Trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             tfr = self._update_tfr()
+            epsilon = self._update_e_greedy()
             if self.use_summaryWriter:
                 self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            att_probs, selected_logprobs, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
+            att_probs, selected_logprobs, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, epsilon = epsilon)
 
             self.logger.info(pformat(['selected_logprobs: ', selected_logprobs]))
             self.logger.info(pformat(['pointers: ', pointers]))
