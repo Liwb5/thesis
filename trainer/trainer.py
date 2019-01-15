@@ -44,7 +44,7 @@ class Trainer(BaseTrainer):
             self.logger.debug(pformat(['hyp: ', hyp]))
             result = self.metrics(hyp, ref, avg=False)
             # maybe can divide to 3
-            r = [item['rouge-1']['r'] + item['rouge-2']['r'] + item['rouge-l']['r'] \
+            r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
                 for item in result]
             R.append(r)
         
@@ -60,7 +60,7 @@ class Trainer(BaseTrainer):
         hyp = self.vocab.extract_summary_from_index(dataset['doc'], pointers)
         #  self.logger.debug(pformat(['hyp: ', hyp]))
         result = self.metrics(hyp, ref, avg=False)
-        r = [item['rouge-1']['r'] + item['rouge-2']['r'] + item['rouge-l']['r'] \
+        r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
             for item in result]
         r = torch.FloatTensor(r).view(-1,1)
         R = r.repeat(1, pointers.size(1))
@@ -141,14 +141,14 @@ class Trainer(BaseTrainer):
 
             docs_features = Variable(docs_features) 
             sum_features, sum_word_lens, sum_target = Variable(sum_features), Variable(sum_word_lens), Variable(sum_target) 
-            labels = Variable(labels)
+            #  labels = Variable(labels)
             #  self.logger.debug(pformat(['docs_features: ', docs_features.data.numpy()]))
             #  self.logger.debug(pformat(['docs_tokens: ', docs_tokens]))
             self.logger.debug(['doc_lens: ', doc_lens])
             #  self.logger.debug(pformat(['sum_features: ', sum_features.data.numpy()]))
             #  self.logger.debug(pformat(['sum_target: ', sum_target.data.numpy()]))
             #  self.logger.debug(['sum_word_lens: ', sum_word_lens])
-            self.logger.debug(pformat(['labels: ', labels.data.numpy()]))
+            #  self.logger.debug(pformat(['labels: ', labels.data.numpy()]))
             #  self.logger.debug(['label_lens: ', label_lens])
             if self.device is not None:
                 docs_features = docs_features.cuda()
@@ -156,7 +156,7 @@ class Trainer(BaseTrainer):
                 sum_features = sum_features.cuda()
                 sum_target = sum_target.cuda()
                 sum_word_lens = sum_word_lens.cuda()
-                labels = labels.cuda()
+                #  labels = labels.cuda()
                 #  label_lens = label_lens.cuda()
 
             self.optimizer.zero_grad()

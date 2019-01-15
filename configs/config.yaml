@@ -1,7 +1,7 @@
-task_name: train.ae.1.0111  # this is the name of the task
-device: 0                   # if you do not want to use GPU, set null
-log_level: debug
-use_summaryWriter: False
+task_name: train.rl_advantage_R.1.0115  # this is the name of the task
+device: 0    # if you do not want to use GPU, set null
+log_level: info 
+use_summaryWriter: True 
 seed: 1667
 loss: nll_loss
 metrics: rouge_metric
@@ -12,15 +12,16 @@ optimizer:
         lr: 0.001
     
 trainer:
-    type: AE_trainer
+    type: Trainer
     args:
-        epochs: 100
+        epochs: 30
         save_period: 1
         print_loss_every: 20                   # print train loss every [num] batches, related to the batch size
-        print_token_every: 6000              # print training tokens to see the result. print every [num] batches 
-        print_val_token_every: 600           # print val tokens to see the result. print every [num] batches 
-        do_validation: True
+        print_token_every: 1000000000             # print training tokens to see the result. print every [num] batches 
+        print_val_token_every: 500000000         # print val tokens to see the result. print every [num] batches 
+        do_validation: True 
         max_norm: 1.0
+        epsilon: 1.0
         save_dir: checkpoints/
         log_dir: logs/
         teacher_forcing_ratio: 0.9
@@ -30,7 +31,7 @@ data_loader:
     train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
     val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
     test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
-    batch_size: 15
+    batch_size: 20
     shuffle: True
     val_data_quota: -1
     data_quota: -1
@@ -40,7 +41,7 @@ vocabulary:
     vocab_file: ./data/dm_data_from_summaRuNNer/origin_data/w2i.json
     sent_trunc: 120
     doc_trunc: 50
-    split_token: \n
+    # split_token: \n
 
 
 lr_scheduler: 
@@ -50,7 +51,7 @@ lr_scheduler:
         gamma: 0.1
     
 model: 
-    type: ae
+    type: RL_AE
     args: 
         embed_dim: 100
         vocab_size: 153826
@@ -58,11 +59,12 @@ model:
         max_len: 120
         sos_id: 2
         eos_id: 3
-        max_selected: 2
+        max_selected: 4
         rnn_cell: gru
         input_dropout_p: 0.0 
         dropout_p: 0.0 
         bidirectional: True
         use_attention: False
-        select_mode: random
+        select_mode: distribute 
+        sample_num: 5
         pretrained_embed: ./data/cnn_dailymail_data/finished_dm_data/embed 
