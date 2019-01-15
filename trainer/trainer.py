@@ -41,6 +41,7 @@ class Trainer(BaseTrainer):
         batch_size = pointers.size(0)
         for i in range(pointers.size(1)):
             hyp = self.vocab.extract_summary_from_index(dataset['doc'], pointers[:,:i+1].view(batch_size, -1))
+            self.logger.debug(pformat(['hyp: ', hyp]))
             result = self.metrics(hyp, ref, avg=False)
             # maybe can divide to 3
             r = [item['rouge-1']['r'] + item['rouge-2']['r'] + item['rouge-l']['r'] \
@@ -54,6 +55,21 @@ class Trainer(BaseTrainer):
         if self.device is not None:
             R = R.cuda()
         return R, final_R
+
+    def _compute_only_final_reward(self, dataset, pointers, ref):
+        hyp = self.vocab.extract_summary_from_index(dataset['doc'], pointers)
+        self.logger.debug(pformat(['hyp: ', hyp]))
+        result = self.metrics(hyp, ref, avg=False)
+        r = [item['rouge-1']['r'] + item['rouge-2']['r'] + item['rouge-l']['r'] \
+            for item in result]
+        r = torch.FloatTensor(r).view(-1,1)
+        R = r.repeat(1, pointers.size(1))
+        #  self.logger.debug(pformat(['R: ', R]))
+        R = Variable(R, requires_grad=False)
+        if self.device is not None:
+            R = R.cuda()
+        return R, r
+
 
 
     #  def predict(self, predicts, target):
@@ -85,8 +101,9 @@ class Trainer(BaseTrainer):
 
 
     def _compute_loss2(self, logprobs, R):
-        loss = logprobs.mul(R)
-        loss = -loss.sum().sum()
+        num_samples = R.size(0) * R.size(1)
+        loss = torch.mul(logprobs, R).view(-1)
+        loss = -loss.sum()/ num_samples
         return loss
 
     def _train_epoch(self, epoch):
@@ -142,17 +159,16 @@ class Trainer(BaseTrainer):
             tfr = self._update_tfr()
             if self.use_summaryWriter:
                 self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            att_probs, selected_logprobes, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
+            att_probs, selected_logprobs, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr)
 
-            #  self.logger.debug(pformat(['hyp: ', hyps]))
-            #  self.logger.debug(pformat(['sum_ref: ', sum_ref]))
-            R, final_R = self._compute_reward(dataset, pointers, sum_ref)
-            #  self.logger.debug(pformat(['R: ', R]))
-            loss = self._compute_loss2(selected_logprobes, R)
-            #  loss = selected_logprobes.mul(R)
-            #  loss = loss.sum().sum()
-            #  self.logger.debug(pformat(['loss: ', loss.item()]))
+            self.logger.info(pformat(['selected_logprobs: ', selected_logprobs]))
+            self.logger.info(pformat(['pointers: ', pointers]))
+            self.logger.debug(pformat(['sum_ref: ', sum_ref]))
+            R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
+            self.logger.info(pformat(['R: ', final_R]))
+            loss = self._compute_loss2(selected_logprobs, R)
             #  loss = self._compute_loss()
+            #  self.logger.debug(pformat(['loss: ', loss.item()]))
 
             # DONE how to compute reward. see RL_combin how to do it 
             #  selected_docs_features = docs_features[pred_index.byte().data].view(docs_features.size(0), pred_index.size(1))
@@ -166,7 +182,7 @@ class Trainer(BaseTrainer):
             total_reward += final_R.sum().item()
 
             if self.global_step % self.trainer_config['print_loss_every'] == 0:
-                avg_loss = total_loss/self.trainer_config['print_loss_every']/self.batch_size
+                avg_loss = total_loss/self.trainer_config['print_loss_every']
                 avg_reward = total_reward/self.trainer_config['print_loss_every']/self.batch_size
                 self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f Reward: %f'
                         %(epoch, self.global_step, step_in_epoch, avg_loss, avg_reward))
