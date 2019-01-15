@@ -186,6 +186,7 @@ class pn_decoder(nn.Module):
         self.max_dec_len = args.max_selected
         self.select_mode = args.select_mode
         self.device = device
+        self.sample_num = args.sample_num
 
         self.init_input = None
 
@@ -245,6 +246,7 @@ class pn_decoder(nn.Module):
         outputs = []
         pointers = []
         selected_probs = []
+        multi_indices = []
 
         def step(x, hidden):
             """
@@ -272,12 +274,10 @@ class pn_decoder(nn.Module):
             #  masked_outs = att_probs * mask  # warning: do not use this operation because att_probs maybe negative number in log_softmax in Attention
             #  logging.debug(['masked_outs (expected B, max_doc_len[3]): ', mask.data.cpu().numpy()])
 
-            # Get maximum probabilities and indices
-            # TODO e-greedy sample 
-            # max_probs: (B, 1) indices: (B, 1) 
-            #  max_probs, indices = masked_outs.max(1)
-            #  selected_prob, indices = att_probs.max(1)
-            selected_prob, indices = self.select_sent_indices(att_probs, mask, epsilon)
+            # e-greedy sample 
+            # selected_prob: (B, 1) indices: (B, 1) 
+            selected_prob, indices = self.sample_sent_indices(att_probs, mask, epsilon)
+            #  multi_index = self.multi_sample_indices(att_probs)
             logging.debug(['selected indices (expected B, 1): ', indices.data.cpu().numpy()])
 
             # runner 每一行都是从0,1,2,3递增，one_hot_pointers是为了得到当前step所选择的对应位置
@@ -293,11 +293,14 @@ class pn_decoder(nn.Module):
 
             outputs.append(att_probs.unsqueeze(0))
             selected_probs.append(selected_prob.unsqueeze(1))
+            #  multi_indices.append(multi_index.unsqueeze(0))
             pointers.append(indices.unsqueeze(1))
 
         outputs = torch.cat(outputs).permute(1, 0, 2)  #(B, max_dec_len, seq_len)
-        pointers = torch.cat(pointers, 1) # (B, max_dec_len)
         selected_probs = torch.cat(selected_probs, 1) # (B, max_dec_len)
+        #  multi_indices = torch.cat(multi_indices)  #(sample_num, B, max_dec_len)
+        pointers = torch.cat(pointers, 1) # (B, max_dec_len)
+        #  logging.debug(['multi_sample_indices (sample_num, B, max_dec_len): ', multi_indices.size()])
         logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.size()])
         #  logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.data.cpu().numpy()])
         logging.debug(['pointers (B, min_doc_lens): ', pointers.size()])
@@ -306,9 +309,26 @@ class pn_decoder(nn.Module):
 
         return outputs, selected_probs, pointers, hidden
 
-    def select_sent_indices(self, att_probs, mask, epsilon):
+    def multi_sample_indices(self, att_probs):
+        att_probs_arr = att_probs.data.cpu().numpy()
+        length = att_probs_arr.shape[1]
+        indices = []
+        for i in range(att_probs_arr.shape[0]):
+            index = []
+            for num in range(self.sample_num):
+                index.append(np.random.choice(length, p = att_probs_arr[i,:]))
+            indices.append(index)
+        indices = torch.LongTensor(indices)
+        logging.debug(['mutli_sample_index  (B, sample_num)', indices.numpy()])
+        #  if self.device is not None:
+        #      indices = indices.cuda()
+
+        # indices: (B, sample_num)
+        return indices
+
+    def sample_sent_indices(self, att_probs, mask, epsilon):
         greedy = False if random.random() < epsilon else True 
-        if greedy:
+        if greedy:  # sample max probability
             selected_prob, indices = att_probs.max(1)
 
         elif self.select_mode == 'random':  # random sample index
@@ -345,7 +365,7 @@ class rnn_decoder(nn.Module):
             input_dropout_p=0, dropout_p=0, use_attention=False,
             embed=None, args = None, eval_model=None, max_dec_len=3):
 
-        super(pn_decoder, self).__init__()
+        super(rnn_decoder, self).__init__()
         self.bidirectional_encoder = bidirectional
 
         self.vocab_size = vocab_size

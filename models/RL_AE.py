@@ -42,6 +42,7 @@ class RL_AE(BaseModel):
 
         self.eval_model = eval_model # TODO eval_model are auto encoder 
         self.dec_input0 = Parameter(torch.FloatTensor(self.dec_hidden_size), requires_grad=False)
+        self.sample_num = args.sample_num
 
     def forward(self, docs_features, doc_lens, summaries_features, summaries_lens, labels, labels_len, tfr, epsilon=0):
 
@@ -52,14 +53,25 @@ class RL_AE(BaseModel):
 
         dec_input0 = self.dec_input0.unsqueeze(0).expand(sents_embed.size(0), -1)
         logging.debug(['dec_input0(expected B, 2H[8]): ', dec_input0.size()])
-        att_probs, selected_probs, pointers,  hidden = self.pn_decoder(inputs = sents_embed, 
+        multi_indices = []
+        for i in range(self.sample_num):
+            _, _, pointers,_ = self.pn_decoder(inputs = sents_embed, 
+                                                            decoder_input = dec_input0,
+                                                            hidden = enc_hidden_t,
+                                                            context = enc_out,
+                                                            docs_lens = doc_lens,
+                                                            epsilon = epsilon)
+            multi_indices.append(pointers)
+
+        att_probs, selected_probs, pointers, hidden = self.pn_decoder(inputs = sents_embed, 
                                                         decoder_input = dec_input0,
                                                         hidden = enc_hidden_t,
                                                         context = enc_out,
                                                         docs_lens = doc_lens,
                                                         epsilon = epsilon)
 
-        return att_probs, selected_probs, pointers
+
+        return att_probs, selected_probs, pointers, multi_indices
 
 
 

@@ -58,7 +58,7 @@ class Trainer(BaseTrainer):
 
     def _compute_only_final_reward(self, dataset, pointers, ref):
         hyp = self.vocab.extract_summary_from_index(dataset['doc'], pointers)
-        self.logger.debug(pformat(['hyp: ', hyp]))
+        #  self.logger.debug(pformat(['hyp: ', hyp]))
         result = self.metrics(hyp, ref, avg=False)
         r = [item['rouge-1']['r'] + item['rouge-2']['r'] + item['rouge-l']['r'] \
             for item in result]
@@ -68,6 +68,7 @@ class Trainer(BaseTrainer):
         R = Variable(R, requires_grad=False)
         if self.device is not None:
             R = R.cuda()
+            r = r.cuda()
         return R, r
 
 
@@ -106,7 +107,7 @@ class Trainer(BaseTrainer):
     def _compute_loss2(self, logprobs, R):
         num_samples = R.size(0) * R.size(1)
         loss = torch.mul(logprobs, R).view(-1)
-        loss = loss.sum()/ num_samples
+        loss = -loss.sum()/ num_samples
         return loss
 
     def _train_epoch(self, epoch):
@@ -163,14 +164,26 @@ class Trainer(BaseTrainer):
             epsilon = self._update_e_greedy()
             if self.use_summaryWriter:
                 self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            att_probs, selected_logprobs, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, epsilon = epsilon)
+            att_probs, selected_logprobs, pointers, multi_indices = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, epsilon = epsilon)
 
-            self.logger.info(pformat(['selected_logprobs: ', selected_logprobs]))
-            self.logger.info(pformat(['pointers: ', pointers]))
+            self.logger.debug(pformat(['multi_indices: ', multi_indices]))
+            multi_sample_reward = []
+            for indices in multi_indices:
+                _, final_R = self._compute_only_final_reward(dataset, indices, sum_ref)
+                multi_sample_reward.append(final_R.unsqueeze(0))
+            multi_sample_reward = torch.cat(multi_sample_reward)  # (sample_num, B, 1)
+            avg_sample_reward = multi_sample_reward.mean(0)    #(B,1)
+            #  self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward.numpy()]))
+            self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
+
+            self.logger.debug(pformat(['selected_logprobs: ', selected_logprobs]))
+            self.logger.debug(pformat(['pointers: ', pointers]))
             self.logger.debug(pformat(['sum_ref: ', sum_ref]))
             R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
-            self.logger.info(pformat(['R: ', final_R]))
-            loss = self._compute_loss2(selected_logprobs, R)
+            self.logger.debug(pformat(['R: ', final_R]))
+            advantage_R = R - avg_sample_reward
+            self.logger.debug(pformat(['advantage_R: ', advantage_R]))
+            loss = self._compute_loss2(selected_logprobs, advantage_R)
             #  loss = self._compute_loss()
             #  self.logger.debug(pformat(['loss: ', loss.item()]))
 
@@ -242,7 +255,7 @@ class Trainer(BaseTrainer):
                     labels = labels.cuda()
                     #  label_lens = label_lens.cuda()
 
-                att_probs, selected_logprobes, pointers = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0)
+                att_probs, selected_logprobes, pointers, _ = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0)
 
                 val_metrics.append(self._eval_metrics(dataset['doc'], pointers, sum_ref))
 
