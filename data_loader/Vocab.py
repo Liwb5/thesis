@@ -65,7 +65,7 @@ class Vocab():
         labels = data['labels']
         docs_features, sents_list, doc_lens = self.docs_to_features(docs)
         summaries_features, summaries_target, summaries_lens, reference = self.summary_to_features(summaries)
-        labels, labels_lens = self.process_labels(labels)
+        labels, labels_lens = None, None #self.process_labels(labels)
         return docs_features, doc_lens, sents_list, summaries_features, summaries_target, summaries_lens, reference, labels, labels_lens
 
     def process_labels(self, labels):
