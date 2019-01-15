@@ -1,6 +1,6 @@
 task_name: debug.rl.1.0111  # this is the name of the task
-device: 0  # if you do not want to use GPU, set null
-log_level: info 
+device: null  # if you do not want to use GPU, set null
+log_level: debug 
 use_summaryWriter: False
 seed: 1667
 loss: nll_loss
@@ -14,12 +14,12 @@ optimizer:
 trainer:
     type: Trainer
     args:
-        epochs: 1000000
+        epochs: 3
         save_period: 10000000000000
         print_loss_every: 10                   # print train loss every [num] batches, related to the batch size
         print_token_every: 1000000000             # print training tokens to see the result. print every [num] batches 
         print_val_token_every: 500000000         # print val tokens to see the result. print every [num] batches 
-        do_validation: True 
+        do_validation: False
         max_norm: 1.0
         save_dir: checkpoints/
         log_dir: logs/
@@ -27,13 +27,13 @@ trainer:
         output_dir: outputs/
 
 data_loader:
-    train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
+    train_data: ./data/dm_data_from_summaRuNNer/origin_data/fake_data.json
     val_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
     test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
-    batch_size: 10
+    batch_size: 2
     shuffle: False
     val_data_quota: 100
-    data_quota: 100
+    data_quota: -1
 
 
 vocabulary: 
