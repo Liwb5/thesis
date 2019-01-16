@@ -104,10 +104,11 @@ class Trainer(BaseTrainer):
         return loss
 
 
-    def _compute_loss2(self, logprobs, R):
+    def _compute_loss2(self, probs, R):
         num_samples = R.size(0) * R.size(1)
+        logprobs = torch.log(probs)
         loss = torch.mul(logprobs, R).view(-1)
-        loss = -loss.sum()/ num_samples
+        loss = -loss.sum() / num_samples * 1000
         return loss
 
     def _train_epoch(self, epoch):
@@ -165,7 +166,7 @@ class Trainer(BaseTrainer):
             if self.use_summaryWriter:
                 self.writer.add_scalar('train/tfr', tfr, self.global_step)
                 self.writer.add_scalar('train/epsilon', epsilon, self.global_step)
-            att_probs, selected_logprobs, pointers, multi_indices = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, epsilon = epsilon)
+            att_probs, selected_probs, pointers, multi_indices = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, epsilon = epsilon)
 
             self.logger.debug(pformat(['multi_indices: ', multi_indices]))
             multi_sample_reward = []
@@ -174,19 +175,19 @@ class Trainer(BaseTrainer):
                 multi_sample_reward.append(final_R.unsqueeze(0))
             multi_sample_reward = torch.cat(multi_sample_reward)  # (sample_num, B, 1)
             avg_sample_reward = multi_sample_reward.mean(0)    #(B,1)
-            #  self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward.numpy()]))
+            self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward.numpy()]))
             self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
 
-            self.logger.debug(pformat(['selected_logprobs: ', selected_logprobs]))
+            self.logger.debug(pformat(['selected_probs: ', selected_probs]))
             self.logger.debug(pformat(['pointers: ', pointers]))
             self.logger.debug(pformat(['sum_ref: ', sum_ref]))
             R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
             self.logger.debug(pformat(['R: ', final_R]))
             advantage_R = R - avg_sample_reward
             self.logger.debug(pformat(['advantage_R: ', advantage_R]))
-            loss = self._compute_loss2(selected_logprobs, advantage_R)
+            loss = self._compute_loss2(selected_probs, advantage_R)
             #  loss = self._compute_loss()
-            #  self.logger.debug(pformat(['loss: ', loss.item()]))
+            self.logger.debug(pformat(['loss: ', loss.item()]))
 
             # DONE how to compute reward. see RL_combin how to do it 
             #  selected_docs_features = docs_features[pred_index.byte().data].view(docs_features.size(0), pred_index.size(1))

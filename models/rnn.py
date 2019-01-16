@@ -268,7 +268,7 @@ class pn_decoder(nn.Module):
         #  logging.debug(['sent_embed(inputs in decoder) (B, max_doc_len[3], 2H): ', inputs.data.cpu().numpy()])
         for _ in range(min(self.max_dec_len, min(docs_lens))):
             hidden, att_probs = step(decoder_input, hidden)
-            logging.debug(['step output att_probs(attention probs)(expected B, max_doc_len[3]): ', att_probs.data.cpu().numpy()])
+            #  logging.debug(['step output att_probs(attention probs)(expected B, max_doc_len[3]): ', att_probs.data.cpu().numpy()])
 
             # Masking selected inputs
             #  masked_outs = att_probs * mask  # warning: do not use this operation because att_probs maybe negative number in log_softmax in Attention
@@ -278,7 +278,7 @@ class pn_decoder(nn.Module):
             # selected_prob: (B, 1) indices: (B, 1) 
             selected_prob, indices = self.sample_sent_indices(att_probs, mask, epsilon)
             #  multi_index = self.multi_sample_indices(att_probs)
-            logging.debug(['selected indices (expected B, 1): ', indices.data.cpu().numpy()])
+            #  logging.debug(['selected indices (expected B, 1): ', indices.data.cpu().numpy()])
 
             # runner 每一行都是从0,1,2,3递增，one_hot_pointers是为了得到当前step所选择的对应位置
             one_hot_pointers = (runner == indices.unsqueeze(1).expand(-1, att_probs.size()[1])).float()
