@@ -9,7 +9,27 @@ from base import BaseTrainer
 from torch.autograd import Variable
 from torch.nn.utils import clip_grad_norm_
 from pprint import pprint, pformat
+from rouge import Rouge
+from multiprocessing import Pool
 
+def rouge_metric(hyps, refs):
+    """
+    Calculate rewards.
+
+    Args:
+        hyps (list): a list of tokens(sentences) that is predicted by the model
+        refs (list): a list of tokens(sentences) that is the reference
+    """
+    pool = Pool(5)
+    data = zip(hyps, refs)
+    scores = pool.map(run_rouge_score, data)
+    pool.close()
+    pool.join()
+    return scores
+
+def run_rouge_score(args):
+    rouge = Rouge()
+    return rouge.get_scores(args[0], args[1], avg=False)[0]
 
 class Trainer(BaseTrainer):
     """
@@ -59,7 +79,9 @@ class Trainer(BaseTrainer):
     def _compute_only_final_reward(self, dataset, pointers, refs):
         hyps = self.vocab.extract_summary_from_index(dataset['doc'], pointers)
         self.logger.debug(pformat(['hyps: ', hyps]))
-        result = self.metrics(hyps, refs, avg=False)
+        self.logger.debug(pformat(['type of hyps: ', type(hyps)]))
+        #  result = self.metrics(hyps, refs, avg=False)
+        result = rouge_metric(hyps, refs)
         r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
             for item in result]
         r = torch.FloatTensor(r).view(-1,1)
@@ -170,6 +192,8 @@ class Trainer(BaseTrainer):
 
             self.logger.debug(pformat(['multi_indices: ', multi_indices]))
             multi_sample_reward = []
+            self.logger.debug(pformat(['type of sum_ref: ', type(sum_ref)]))
+            self.logger.debug(pformat(['sum_ref: ', sum_ref]))
             for indices in multi_indices:
                 _, final_R = self._compute_only_final_reward(dataset, indices, sum_ref)
                 multi_sample_reward.append(final_R.unsqueeze(0))
@@ -180,7 +204,6 @@ class Trainer(BaseTrainer):
 
             self.logger.debug(pformat(['selected_probs: ', selected_probs]))
             self.logger.debug(pformat(['pointers: ', pointers]))
-            self.logger.debug(pformat(['sum_ref: ', sum_ref]))
             R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
             self.logger.debug(pformat(['R: ', final_R]))
             advantage_R = R - avg_sample_reward
