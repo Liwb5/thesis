@@ -242,16 +242,26 @@ class Vocab():
         return input_features, label_features, sents_len, reference
 
     def extract_summary_from_index(self, docs, index):
+        """
+        Args:
+            docs(B, 1): 
+            index(B, sent_um): two dimension array(tensor), every line represent the indices of selected sentence in a document.
+        """
         if not isinstance(docs,list):
             docs = [docs]
 
-        hyp = []
+        hyps = []
         for doc, idx in zip(docs, index):
             sents = doc.split(self.split_token)
             summary = [sents[i] for i in idx]
-            hyp.append(' '.join(summary))
+            summary = ' '.join(summary).split()
+            # if the summary too long, then calculate rouge score maybe report error with 
+            # maximum recursion depth exceeded in comparison
+            max_len = min(500, len(summary)) 
+            summary = summary[:max_len]
+            hyps.append(' '.join(summary))
 
-        return hyp
+        return hyps
 
 
     def add_vocab(self, vocab_file):
