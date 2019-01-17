@@ -175,7 +175,7 @@ class Trainer(BaseTrainer):
                 multi_sample_reward.append(final_R.unsqueeze(0))
             multi_sample_reward = torch.cat(multi_sample_reward)  # (sample_num, B, 1)
             avg_sample_reward = multi_sample_reward.mean(0)    #(B,1)
-            self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward.numpy()]))
+            self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward]))
             self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
 
             self.logger.debug(pformat(['selected_probs: ', selected_probs]))
