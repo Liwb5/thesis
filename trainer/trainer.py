@@ -202,8 +202,8 @@ class Trainer(BaseTrainer):
             self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward]))
             self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
 
-            self.logger.debug(pformat(['selected_probs: ', selected_probs]))
-            self.logger.debug(pformat(['pointers: ', pointers]))
+            self.logger.info(pformat(['selected_probs: ', selected_probs[0]]))
+            self.logger.info(pformat(['pointers: ', pointers[0]]))
             R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
             self.logger.debug(pformat(['R: ', final_R]))
             advantage_R = R - avg_sample_reward
