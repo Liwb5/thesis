@@ -100,7 +100,7 @@ def test(config, resume):
 
     logging.info(['resume path: ', resume])
 
-    test_data = Dataset(config['data_loader']['test_data'], data_quota = 100)
+    test_data = Dataset(config['data_loader']['test_data'], data_quota = -1)
     test_data_loader = DataLoader(dataset = test_data,
                             batch_size = config['data_loader']['batch_size'])
     logging.info('using %d examples to test. ' % len(test_data))
