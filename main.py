@@ -120,6 +120,6 @@ if __name__ == '__main__':
         raise AssertionError("Configuration file need to be specified. Add '-c config.json', for example.")
     
     if config['device'] is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = config['device']
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(config['device'])
 
     main(config, args.resume)
