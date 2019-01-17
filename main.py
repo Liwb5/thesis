@@ -104,8 +104,8 @@ if __name__ == '__main__':
                            help='config file path (default: None)')
     parser.add_argument('-r', '--resume', default=None, type=str,
                            help='path to latest checkpoint (default: None)')
-    parser.add_argument('-d', '--device', default=None, type=str,
-                           help='indices of GPUs to enable (default: all)')
+    #  parser.add_argument('-d', '--device', default=None, type=str,
+    #                         help='indices of GPUs to enable (default: all)')
     args = parser.parse_args()
 
     if args.config:
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     else:
         raise AssertionError("Configuration file need to be specified. Add '-c config.json', for example.")
     
-    if args.device is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.device
+    if config['device'] is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = config['device']
 
     main(config, args.resume)
