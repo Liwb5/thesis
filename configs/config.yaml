@@ -1,4 +1,7 @@
-task_name: train.rl_advantage_R.1.0115  # this is the name of the task
+# multi processing with calculating rewards
+# multiple reward with 10 to make the loss more sensitive
+# using rouge_f to calculate reward
+task_name: train.rl_advantage_R_10Rewards.v2_0.big.0118  # this is the name of the task
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True 
@@ -39,9 +42,9 @@ data_loader:
 
 vocabulary: 
     vocab_file: ./data/dm_data_from_summaRuNNer/origin_data/w2i.json
+    embed_file: ./data/dm_data_from_summaRuNNer/origin_data/embedding.npz
     sent_trunc: 120
     doc_trunc: 50
-    # split_token: \n
 
 
 lr_scheduler: 
@@ -67,4 +70,3 @@ model:
         use_attention: False
         select_mode: distribute 
         sample_num: 5
-        pretrained_embed: ./data/cnn_dailymail_data/finished_dm_data/embed 

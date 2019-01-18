@@ -1,7 +1,7 @@
-# using fake data to debug when modify code
+# using small dataset to train the model to verify whether the model can converge
 task_name: debug.rl.1.0111  # this is the name of the task
-device: null  # if you do not want to use GPU, set null
-log_level: debug
+device: 0 # if you do not want to use GPU, set null
+log_level: info 
 use_summaryWriter: False 
 seed: 1667
 loss: nll_loss
@@ -15,7 +15,7 @@ optimizer:
 trainer:
     type: Trainer
     args:
-        epochs: 1
+        epochs: 100
         save_period: 10000000000000
         print_loss_every: 10                   # print train loss every [num] batches, related to the batch size
         print_token_every: 1000000000             # print training tokens to see the result. print every [num] batches 
@@ -29,8 +29,7 @@ trainer:
         output_dir: outputs/
 
 data_loader:
-    train_data: ./data/dm_data_from_summaRuNNer/origin_data/fake_data.json
-    # train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
+    train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
     val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
     test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
     batch_size: 10
