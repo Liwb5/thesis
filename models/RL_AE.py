@@ -12,15 +12,19 @@ from base.base_model import BaseModel
 from utils.util import *
 
 class RL_AE(BaseModel):
-    def __init__(self, args, eval_model=None, device=None):
+    def __init__(self, args, eval_model=None, embed = None, device=None):
         super(RL_AE, self).__init__()
 
         args = dict_to_namedtuple(args)
         self.args = args
         self.device = device
 
-        # TODO embedding should use pretrained word vecotr, can get embedding from eval_model
-        self.embedding = nn.Embedding(args.vocab_size, args.embed_dim)
+        if embed is not None:
+            embed = torch.FloatTensor(embed)
+            self.embedding = nn.Embedding.from_pretrained(embed, freeze = True)
+            logging.info('using pretrained embedding')
+        else:
+            self.embedding = nn.Embedding(args.vocab_size, args.embed_dim)
 
         self.stack_encoder = stack_encoder(args, embed=self.embedding, device=device)
 
@@ -35,7 +39,7 @@ class RL_AE(BaseModel):
                                     input_dropout_p = args.input_dropout_p,
                                     dropout_p = args.dropout_p,
                                     use_attention = True,
-                                    embed = self.embedding, # TODO pn_decoder do not need embedding
+                                    embed = None, 
                                     args = args,
                                     eval_model = None,
                                     device = device)

@@ -84,7 +84,7 @@ class Trainer(BaseTrainer):
         result = rouge_metric(hyps, refs)
         r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
             for item in result]
-        r = torch.FloatTensor(r).view(-1,1)
+        r = torch.FloatTensor(r).view(-1,1) * 10
         R = r.repeat(1, pointers.size(1))
         #  self.logger.debug(pformat(['R: ', R]))
         R = Variable(R, requires_grad=False)
@@ -130,7 +130,7 @@ class Trainer(BaseTrainer):
         num_samples = R.size(0) * R.size(1)
         logprobs = torch.log(probs)
         loss = torch.mul(logprobs, R).view(-1)
-        loss = -loss.sum() / num_samples * 1000
+        loss = -loss.sum() / num_samples
         return loss
 
     def _train_epoch(self, epoch):

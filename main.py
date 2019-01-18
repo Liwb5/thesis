@@ -65,10 +65,10 @@ def main(config, resume):
     valid_data_loader = DataLoader(dataset = val_data,
                             batch_size = config['data_loader']['batch_size'])
 
-    vocab = Vocab(**config['vocabulary'], embed=None)
+    vocab = Vocab(**config['vocabulary'])
 
     # build model architecture
-    model = getattr(models, config['model']['type'])(config['model']['args'], device=config['device'])
+    model = getattr(models, config['model']['type'])(config['model']['args'], device=config['device'], embed=vocab.embedding)
     logging.info(['model infomation: ', model])
 
     # get function handles of loss and metrics
@@ -82,7 +82,7 @@ def main(config, resume):
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = getattr(torch.optim, config['optimizer']['type'])(trainable_params, **config['optimizer']['args'])
-    lr_scheduler = getattr(torch.optim.lr_scheduler, config['lr_scheduler']['type'])(optimizer, **config['lr_scheduler']['args'])
+    lr_scheduler = None #getattr(torch.optim.lr_scheduler, config['lr_scheduler']['type'])(optimizer, **config['lr_scheduler']['args'])
 
     trainer = getattr(module_trainer, config['trainer']['type'])(
                       model, loss,  optimizer,

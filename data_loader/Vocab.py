@@ -8,7 +8,7 @@ import torch
 from torch.autograd import Variable
 
 class Vocab():
-    def __init__(self, vocab_file, doc_trunc=50, sent_trunc=120, split_token='\n', embed=None):
+    def __init__(self, vocab_file, doc_trunc=50, sent_trunc=120, split_token='\n', embed_file=None):
 
         with open(vocab_file) as f:
             self.word2id = json.load(f)
@@ -23,11 +23,16 @@ class Vocab():
         self.UNK_TOKEN = 'UNK_TOKEN'
         self.SOS_TOKEN = 'SOS_TOKEN'
         self.EOS_TOKEN = 'EOS_TOKEN'
-        self.embedding = embed
         self.vocab_size = len(self.word2id)
         self.doc_trunc = doc_trunc
         self.sent_trunc = sent_trunc
         self.split_token = split_token
+
+        if embed_file is not None:
+            self.embedding = np.load(embed_file)['embedding']
+        else:
+            self.embedding = None
+
 
     def w2i(self, key):
         if key in self.word2id:
