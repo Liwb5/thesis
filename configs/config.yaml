@@ -24,7 +24,7 @@ trainer:
         print_val_token_every: 500000000         # print val tokens to see the result. print every [num] batches 
         do_validation: True 
         max_norm: 1.0
-        epsilon: 1.0
+        epsilon: 0.9    # the initial probability of exploration
         save_dir: checkpoints/
         log_dir: logs/
         teacher_forcing_ratio: 0.9

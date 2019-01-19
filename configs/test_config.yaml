@@ -1,7 +1,7 @@
 # using small dataset to train the model to verify whether the model can converge
 task_name: debug.rl.1.0111  # this is the name of the task
 device: 0 # if you do not want to use GPU, set null
-log_level: info 
+log_level: debug 
 use_summaryWriter: False 
 seed: 1667
 loss: nll_loss
@@ -22,7 +22,7 @@ trainer:
         print_val_token_every: 500000000         # print val tokens to see the result. print every [num] batches 
         do_validation: False 
         max_norm: 1.0
-        epsilon: 1.0
+        epsilon: 0.9    # the probability of exploration
         save_dir: checkpoints/
         log_dir: logs/
         teacher_forcing_ratio: 0.9
@@ -40,7 +40,7 @@ data_loader:
 
 vocabulary: 
     vocab_file: ./data/dm_data_from_summaRuNNer/origin_data/w2i.json
-    embed_file: ./data/dm_data_from_summaRuNNer/origin_data/embedding.npz 
+    embed_file: null #./data/dm_data_from_summaRuNNer/origin_data/embedding.npz 
     sent_trunc: 120
     doc_trunc: 50
 

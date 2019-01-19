@@ -78,8 +78,8 @@ class Trainer(BaseTrainer):
 
     def _compute_only_final_reward(self, dataset, pointers, refs):
         hyps = self.vocab.extract_summary_from_index(dataset['doc'], pointers)
-        self.logger.debug(pformat(['hyps: ', hyps]))
-        self.logger.debug(pformat(['type of hyps: ', type(hyps)]))
+        #  self.logger.debug(pformat(['hyps: ', hyps]))
+        #  self.logger.debug(pformat(['type of hyps: ', type(hyps)]))
         #  result = self.metrics(hyps, refs, avg=False)
         result = rouge_metric(hyps, refs)
         r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
@@ -109,8 +109,9 @@ class Trainer(BaseTrainer):
         #  tfr = self.trainer_config['teacher_forcing_ratio'] - self.global_step/len(self.data_loader)
         return tfr 
 
-    def _update_e_greedy(self):
-        return self.trainer_config['epsilon']
+    def _update_e_greedy(self, epoch):
+        e_greedy = max(0.1, self.trainer_config['epsilon'] - epoch*0.1)
+        return e_greedy  #
 
     def _compute_loss(self, predicts, labels):
         """ @predicts:(B, seq_len, vocab_size) 
@@ -167,7 +168,6 @@ class Trainer(BaseTrainer):
             #  labels = Variable(labels)
             #  self.logger.debug(pformat(['docs_features: ', docs_features.data.numpy()]))
             #  self.logger.debug(pformat(['docs_tokens: ', docs_tokens]))
-            self.logger.debug(['doc_lens: ', doc_lens])
             #  self.logger.debug(pformat(['sum_features: ', sum_features.data.numpy()]))
             #  self.logger.debug(pformat(['sum_target: ', sum_target.data.numpy()]))
             #  self.logger.debug(['sum_word_lens: ', sum_word_lens])
@@ -184,30 +184,31 @@ class Trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             tfr = self._update_tfr()
-            epsilon = self._update_e_greedy()
+            epsilon = self._update_e_greedy(epoch)
             if self.use_summaryWriter:
                 self.writer.add_scalar('train/tfr', tfr, self.global_step)
                 self.writer.add_scalar('train/epsilon', epsilon, self.global_step)
             att_probs, selected_probs, pointers, multi_indices = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, epsilon = epsilon)
 
-            self.logger.debug(pformat(['multi_indices: ', multi_indices]))
+            #  self.logger.debug(pformat(['multi_indices: ', multi_indices]))
             multi_sample_reward = []
-            self.logger.debug(pformat(['type of sum_ref: ', type(sum_ref)]))
-            self.logger.debug(pformat(['sum_ref: ', sum_ref]))
+            #  self.logger.debug(pformat(['type of sum_ref: ', type(sum_ref)]))
+            #  self.logger.debug(pformat(['sum_ref: ', sum_ref]))
             for indices in multi_indices:
                 _, final_R = self._compute_only_final_reward(dataset, indices, sum_ref)
                 multi_sample_reward.append(final_R.unsqueeze(0))
             multi_sample_reward = torch.cat(multi_sample_reward)  # (sample_num, B, 1)
             avg_sample_reward = multi_sample_reward.mean(0)    #(B,1)
-            self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward]))
-            self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
+            #  self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward]))
+            #  self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
 
-            self.logger.info(pformat(['selected_probs: ', selected_probs[0]]))
-            self.logger.info(pformat(['pointers: ', pointers[0]]))
+            self.logger.info(pformat(['selected_probs: ', selected_probs]))
+            self.logger.info(pformat(['pointers: ', pointers]))
+            self.logger.debug(['doc_lens: ', doc_lens])
             R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
             self.logger.debug(pformat(['R: ', final_R]))
             advantage_R = R - avg_sample_reward
-            self.logger.debug(pformat(['advantage_R: ', advantage_R]))
+            #  self.logger.debug(pformat(['advantage_R: ', advantage_R]))
             loss = self._compute_loss2(selected_probs, advantage_R)
             #  loss = self._compute_loss()
             self.logger.debug(pformat(['loss: ', loss.item()]))
