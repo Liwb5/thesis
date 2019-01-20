@@ -205,7 +205,8 @@ class pn_decoder(nn.Module):
         #      self.embedding = nn.Embedding(self.vocab_size, self.hidden_size)
 
         if use_attention:
-            self.att = Attention(self.hidden_size, self.hidden_size)
+            self.att = Attention(self.hidden_size, self.hidden_size, 
+                            use_tanh=True, explorate_rate=10, device=self.device)
 
         # Used for propagating .cuda() command
         self.mask = Parameter(torch.ones(1), requires_grad=False)
@@ -268,7 +269,7 @@ class pn_decoder(nn.Module):
         #  logging.debug(['sent_embed(inputs in decoder) (B, max_doc_len[3], 2H): ', inputs.data.cpu().numpy()])
         for _ in range(min(self.max_dec_len, min(docs_lens))):
             hidden, att_probs = step(decoder_input, hidden)
-            logging.debug(['step output att_probs(attention probs)(expected B, max_doc_len[3]): ', att_probs.data.cpu().numpy()])
+            logging.debug(['step output att_probs(attention probs)(expected B, max_doc_len[3]): ', att_probs])
 
             # Masking selected inputs
             #  masked_outs = att_probs * mask  # warning: do not use this operation because att_probs maybe negative number in log_softmax in Attention
@@ -276,10 +277,11 @@ class pn_decoder(nn.Module):
 
             # e-greedy sample 
             # selected_prob: (B, 1) indices: (B, 1) 
-            selected_prob, indices = self.sample_sent_indices(att_probs, mask, epsilon)
+            selected_prob, indices = self.sample_sent_indices(att_probs, pointers)
             #  multi_index = self.multi_sample_indices(att_probs)
-            logging.debug(['selected indices (expected B, 1): ', indices.data.cpu().numpy()])
-            logging.debug(['selected probs(expected B, 1): ', selected_prob.data.cpu().numpy()])
+            #  logging.info(['mask: ', mask])
+            logging.debug(['selected indices (expected B, 1): ', indices])
+            logging.debug(['selected probs(expected B, 1): ', selected_prob])
 
             # runner 每一行都是从0,1,2,3递增，one_hot_pointers是为了得到当前step所选择的对应位置
             one_hot_pointers = (runner == indices.unsqueeze(1).expand(-1, att_probs.size()[1])).float()
@@ -294,13 +296,15 @@ class pn_decoder(nn.Module):
 
             outputs.append(att_probs.unsqueeze(0))
             selected_probs.append(selected_prob.unsqueeze(1))
+            #  selected_probs.append(selected_prob)
             #  multi_indices.append(multi_index.unsqueeze(0))
             pointers.append(indices.unsqueeze(1))
 
+        #  logging.info(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs[0][0]])
         outputs = torch.cat(outputs).permute(1, 0, 2)  #(B, max_dec_len, seq_len)
         selected_probs = torch.cat(selected_probs, 1) # (B, max_dec_len)
-        #  multi_indices = torch.cat(multi_indices)  #(sample_num, B, max_dec_len)
         pointers = torch.cat(pointers, 1) # (B, max_dec_len)
+        #  multi_indices = torch.cat(multi_indices)  #(sample_num, B, max_dec_len)
         #  logging.debug(['multi_sample_indices (sample_num, B, max_dec_len): ', multi_indices.size()])
         #  logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.size()])
         #  logging.debug(['all att_probs (B, min_doc_lens, max_doc_len): ', outputs.data.cpu().numpy()])
@@ -327,38 +331,57 @@ class pn_decoder(nn.Module):
         # indices: (B, sample_num)
         return indices
 
-    def sample_sent_indices(self, att_probs, mask, epsilon):
-        greedy = False #if random.random() < epsilon else True 
-        if greedy:  # sample max probability
-            selected_prob, indices = att_probs.max(1)
+    def sample_sent_indices(self, att_probs, selected_idxs):
+        c = torch.distributions.Categorical(att_probs)
+        indices = c.sample()
 
-        else:
-            self.select_mode = 'random' if random.random() < 1.0 else 'distribute'
+        # due to race conditions(sample indices that have been sampled ), might need to resample here
+        for idx in selected_idxs:
+            # compare new idxs
+            # elementwise with the previous idxs. If any matches,
+            # then need to resample
+            if indices.eq(idx.squeeze(1)).data.any():
+                logging.warning(['[!] resampling due to rare condition', indices])
+                indices = c.sample()
+                break
 
-            if self.select_mode == 'random':  # random sample index
-                #  logging.debug('in random')
-                mask_arr = mask.data.cpu().numpy()
-                indices = []
-                for i in range(mask_arr.shape[0]):
-                    indices.append(np.random.choice(np.where(mask_arr[i,:] == 1)[0]))
-                indices = torch.LongTensor(indices)
-                if self.device is not None:
-                    indices = indices.cuda()
-                selected_prob = att_probs.gather(1, indices.view(-1,1)).squeeze(1)
+        selected_prob = torch.cat([torch.index_select(prob, 0, idx).unsqueeze(0) \
+                                    for prob, idx in zip(att_probs, indices)]).squeeze(1)
 
-            elif self.select_mode == 'distribute': # sample index with distribution
-                #  logging.debug('in distribute')
-                att_probs_arr = att_probs.data.cpu().numpy()
-                length = att_probs_arr.shape[1]
-                indices = []
-                for i in range(att_probs_arr.shape[0]):
-                    indices.append(np.random.choice(length, p = att_probs_arr[i,:]))
-                indices = torch.LongTensor(indices)
-                if self.device is not None:
-                    indices = indices.cuda()
-                selected_prob = att_probs.gather(1, indices.view(-1,1)).squeeze(1)
-            else:
-                selected_prob, indices = att_probs.max(1)
+        #  greedy = False #if random.random() < epsilon else True
+        #  if greedy:  # sample max probability
+        #      selected_prob, indices = att_probs.max(1)
+        #
+        #  else:
+        #      self.select_mode = 'random' if random.random() < 0.4 else 'distribute'
+        #
+        #      if self.select_mode == 'random':  # random sample index
+        #          #  logging.debug('in random')
+        #          mask_arr = mask.data.cpu().numpy()
+        #          indices = []
+        #          for i in range(mask_arr.shape[0]):
+        #              indices.append(np.random.choice(np.where(mask_arr[i,:] == 1)[0]))
+        #          indices = torch.LongTensor(indices)
+        #          if self.device is not None:
+        #              indices = indices.cuda()
+        #          selected_prob = att_probs.gather(1, indices.view(-1,1)).squeeze(1)
+        #
+        #      elif self.select_mode == 'distribute': # sample index with distribution
+        #          #  logging.debug('in distribute')
+        #          #  c = torch.distributions.Categorical(att_probs)
+        #          #  indices = c.sample()
+        #          #  selected_prob = att_probs[indices]
+        #          att_probs_arr = att_probs.data.cpu().numpy()
+        #          length = att_probs_arr.shape[1]
+        #          indices = []
+        #          for i in range(att_probs_arr.shape[0]):
+        #              indices.append(np.random.choice(length, p = att_probs_arr[i,:]))
+        #          indices = torch.LongTensor(indices)
+        #          if self.device is not None:
+        #              indices = indices.cuda()
+        #          selected_prob = att_probs.gather(1, indices.view(-1,1)).squeeze(1)
+        #      else:
+        #          selected_prob, indices = att_probs.max(1)
 
         return selected_prob, indices
 

@@ -128,10 +128,24 @@ class Trainer(BaseTrainer):
 
 
     def _compute_loss2(self, probs, R):
-        num_samples = R.size(0) * R.size(1)
-        logprobs = torch.log(probs)
-        loss = torch.mul(logprobs, R).view(-1)
-        loss = -loss.sum() / num_samples
+        #  num_samples = R.size(0) * R.size(1)
+        logprobs = 0
+        probs = probs.transpose(0,1)
+        for prob in probs:
+            logprob = torch.log(prob)
+            logprobs += -logprob
+
+        self.logger.debug(['logprob: ', logprobs])
+        # guard againt nan
+        logprobs[(logprobs != logprobs).detach()] = 0.
+        # clamp any inf's to 0 
+        logprobs[(logprobs > 1000).detach()] = 0.
+
+        loss = logprobs * R
+        loss = loss.mean()
+        #  logprobs = torch.log(probs).transpose(0,1)
+        #  loss = torch.mul(logprobs, R).view(-1)
+        #  loss = -loss.sum() / num_samples
         return loss
 
     def _train_epoch(self, epoch):
@@ -202,12 +216,10 @@ class Trainer(BaseTrainer):
             #  self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward]))
             #  self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
 
-            self.logger.info(pformat(['selected_probs: ', selected_probs]))
-            self.logger.info(pformat(['pointers: ', pointers]))
             self.logger.debug(['doc_lens: ', doc_lens])
             R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
             self.logger.debug(pformat(['R: ', final_R]))
-            advantage_R = R - avg_sample_reward
+            advantage_R = final_R - avg_sample_reward
             #  self.logger.debug(pformat(['advantage_R: ', advantage_R]))
             loss = self._compute_loss2(selected_probs, advantage_R)
             #  loss = self._compute_loss()
@@ -225,6 +237,8 @@ class Trainer(BaseTrainer):
             total_reward += final_R.sum().item()
 
             if self.global_step % self.trainer_config['print_loss_every'] == 0:
+                self.logger.info(pformat(['selected_probs: ', selected_probs[0]]))
+                self.logger.info(pformat(['pointers: ', pointers[0]]))
                 avg_loss = total_loss/self.trainer_config['print_loss_every']
                 avg_reward = total_reward/self.trainer_config['print_loss_every']/self.batch_size
                 self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f Reward: %f'
