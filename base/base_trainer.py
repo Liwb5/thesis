@@ -23,10 +23,13 @@ class BaseTrainer:
         self.device = config['device']
         self.model = model
         self.loss = loss
+        self.exp_avg_reward = torch.zeros(1)
+
         if self.device is not None:
             torch.cuda.set_device(config['device'])
             self.model = model.cuda()
             self.loss = loss.cuda()
+            self.exp_avg_reward = self.exp_avg_reward.cuda()
 
         self.metrics = metrics
         self.optimizer = optimizer
@@ -95,6 +98,7 @@ class BaseTrainer:
             'model': model_name,
             'epoch': epoch,
             'global_step': self.global_step, 
+            #  'exp_avg_reward': self.exp_avg_reward,
             'logger': self.train_logger,
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
@@ -119,6 +123,7 @@ class BaseTrainer:
         checkpoint = torch.load(resume_path)
         self.start_epoch = checkpoint['epoch'] + 1
         self.global_step = checkpoint['global_step'] + 1
+        #  self.exp_avg_reward = checkpoint['exp_avg_reward']
         #  self.mnt_best = checkpoint['monitor_best']
 
         # load architecture params from checkpoint.
