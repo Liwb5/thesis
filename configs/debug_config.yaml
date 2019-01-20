@@ -1,5 +1,5 @@
 # using fake data to debug when modify code
-task_name: debug.rl.1.0111  # this is the name of the task
+task_name: debug.rl.1.0120  # this is the name of the task
 device: null  # if you do not want to use GPU, set null
 log_level: debug
 use_summaryWriter: False 
@@ -10,7 +10,7 @@ metrics: rouge_metric
 optimizer: 
     type: Adam
     args:
-        lr: 0.001
+        lr: 0.0001
     
 trainer:
     type: Trainer
@@ -33,15 +33,15 @@ data_loader:
     # train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
     val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
     test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
-    batch_size: 10
+    batch_size: 2
     shuffle: False
     val_data_quota: 100
-    data_quota: 100
+    data_quota: -1 
 
 
 vocabulary: 
     vocab_file: ./data/dm_data_from_summaRuNNer/origin_data/w2i.json
-    embed_file: ./data/dm_data_from_summaRuNNer/origin_data/embedding.npz 
+    embed_file: null  #./data/dm_data_from_summaRuNNer/origin_data/embedding.npz 
     sent_trunc: 120
     doc_trunc: 50
 
@@ -55,17 +55,17 @@ lr_scheduler:
 model: 
     type: RL_AE
     args: 
-        embed_dim: 100
+        embed_dim: 5
         vocab_size: 153826
-        hidden_size: 128
+        hidden_size: 4
         max_len: 120
         sos_id: 2
         eos_id: 3
-        max_selected: 4
+        max_selected: 3
         rnn_cell: gru
         input_dropout_p: 0.0 
         dropout_p: 0.0 
         bidirectional: True
         use_attention: False
         select_mode: distribute 
-        sample_num: 5
+        sample_num: 1

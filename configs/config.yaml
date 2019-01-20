@@ -1,10 +1,12 @@
 # multi processing with calculating rewards
-# multiple reward with 10 to make the loss more sensitive
+# multiply reward with 10 to make the loss more sensitive
 # using rouge_f to calculate reward
-task_name: train.rl_advantage_R_10Rewards.v2_0.big.0118  # this is the name of the task
+# using tanh and explorate_rate==10 to contrain the result of attention alpha, so that sample can explorate
+# loss function can avoid nan value 
+task_name: train.rl_advantage_R_10Rewards_explorate_rate10.v2_0.big.0120  # this is the name of the task
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
-use_summaryWriter: True 
+use_summaryWriter: True
 seed: 1667
 loss: nll_loss
 metrics: rouge_metric
@@ -12,7 +14,7 @@ metrics: rouge_metric
 optimizer: 
     type: Adam
     args:
-        lr: 0.001
+        lr: 0.0001
     
 trainer:
     type: Trainer
