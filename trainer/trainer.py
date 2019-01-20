@@ -219,6 +219,7 @@ class Trainer(BaseTrainer):
 
             self.logger.debug(['doc_lens: ', doc_lens])
             R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
+            beta = 0.9
             if self.global_step == 1:
                 self.exp_avg_reward = final_R.mean()
             else:
@@ -249,7 +250,7 @@ class Trainer(BaseTrainer):
                 avg_loss = total_loss/self.trainer_config['print_loss_every']
                 avg_reward = total_reward/self.trainer_config['print_loss_every']/self.batch_size
                 self.logger.info('Epoch: %d, global_batch: %d, Batch ID:%d Loss:%f Reward: %f exp_ava_reward: %f'
-                        %(epoch, self.global_step, step_in_epoch, avg_loss, avg_reward, self.exp_ava_reward))
+                        %(epoch, self.global_step, step_in_epoch, avg_loss, avg_reward, self.exp_avg_reward))
                 if self.use_summaryWriter:
                     self.writer.add_scalar('train/loss', avg_loss, self.global_step)
                     self.writer.add_scalar('train/rewards', avg_reward, self.global_step)
