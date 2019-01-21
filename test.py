@@ -70,10 +70,11 @@ class Test():
                     labels = labels.cuda()
                     #  label_lens = label_lens.cuda()
 
-                att_probs, selected_probes, pointers, _ = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0)
+                att_probs, selected_probes, pointers, _ = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0, select_mode='max')
 
                 test_metrics.append(self._eval_metrics(dataset['doc'], pointers, sum_ref))
-                logging.info(pformat(pointers.data.cpu().numpy()))
+                for i range(pointers.size(0)):
+                    logging.info(pointers[i])
 
             for i in range(len(test_metrics)):
                 for m in METRICS:
@@ -105,7 +106,7 @@ def test(config, resume):
                             batch_size = config['data_loader']['batch_size'])
     logging.info('using %d examples to test. ' % len(test_data))
 
-    vocab = Vocab(**config['vocabulary'], embed=None)
+    vocab = Vocab(**config['vocabulary'])
     # build model architecture
     model = getattr(models, config['model']['type'])(config['model']['args'], device=config['device'])
     #  logging.info(['model infomation: ', model])
@@ -139,14 +140,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='thesis_test')
     parser.add_argument('-r', '--resume', default=None, type=str,
                            help='path to latest checkpoint (default: None)')
+    parser.add_argument('-c', '--config', default=None, type=str,
+                           help='config file path (default: None)')
     parser.add_argument('-d', '--device', default=None, type=str,
                            help='indices of GPUs to enable (default: all)')
     args = parser.parse_args()
 
-    if args.resume:
+    if args.config:
+        config = get_config_from_yaml(args.config)
+
+    elif args.resume:
         config = torch.load(args.resume)['config']
 
-    if args.device is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.device
+    if config['device'] is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(config['device'])
 
     test(config, args.resume)
