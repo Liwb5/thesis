@@ -221,7 +221,7 @@ class pn_decoder(nn.Module):
             mask[i][lens[i]:] = 0
         return mask
 
-    def forward(self, inputs, decoder_input, hidden, context, docs_lens, epsilon=0):
+    def forward(self, inputs, decoder_input, hidden, context, docs_lens, select_mode='max'):
         """
         Args:
             inputs(B, labels_len, hidden_size): sentence embedding, 每一步的decoder的输入从这里选择 
@@ -277,7 +277,7 @@ class pn_decoder(nn.Module):
 
             # e-greedy sample 
             # selected_prob: (B, 1) indices: (B, 1) 
-            selected_prob, indices = self.sample_sent_indices(att_probs, pointers)
+            selected_prob, indices = self.sample_sent_indices(att_probs, pointers, select_mode)
             #  multi_index = self.multi_sample_indices(att_probs)
             #  logging.info(['mask: ', mask])
             logging.debug(['selected indices (expected B, 1): ', indices])
@@ -331,22 +331,26 @@ class pn_decoder(nn.Module):
         # indices: (B, sample_num)
         return indices
 
-    def sample_sent_indices(self, att_probs, selected_idxs):
-        c = torch.distributions.Categorical(att_probs)
-        indices = c.sample()
+    def sample_sent_indices(self, att_probs, selected_idxs, select_mode):
+        if select_mode == 'max':
+            selected_prob, indices = att_probs.max(1)
+        else:
 
-        # due to race conditions(sample indices that have been sampled ), might need to resample here
-        for idx in selected_idxs:
-            # compare new idxs
-            # elementwise with the previous idxs. If any matches,
-            # then need to resample
-            if indices.eq(idx.squeeze(1)).data.any():
-                logging.warning(['[!] resampling due to rare condition', indices])
-                indices = c.sample()
-                break
+            c = torch.distributions.Categorical(att_probs)
+            indices = c.sample()
 
-        selected_prob = torch.cat([torch.index_select(prob, 0, idx).unsqueeze(0) \
-                                    for prob, idx in zip(att_probs, indices)]).squeeze(1)
+            # due to race conditions(sample indices that have been sampled ), might need to resample here
+            for idx in selected_idxs:
+                # compare new idxs
+                # elementwise with the previous idxs. If any matches,
+                # then need to resample
+                if indices.eq(idx.squeeze(1)).data.any():
+                    logging.warning(['[!] resampling due to rare condition', indices])
+                    indices = c.sample()
+                    break
+
+            selected_prob = torch.cat([torch.index_select(prob, 0, idx).unsqueeze(0) \
+                                        for prob, idx in zip(att_probs, indices)]).squeeze(1)
 
         #  greedy = False #if random.random() < epsilon else True
         #  if greedy:  # sample max probability

@@ -65,6 +65,7 @@ class BaseTrainer:
 
             val_result = {}
             if self.trainer_config['do_validation'] and self.do_validation:
+                self.logger.info('doing validation ... ')
                 val_result = self._valid_epoch(epoch)
 
             # save logged informations into log dict

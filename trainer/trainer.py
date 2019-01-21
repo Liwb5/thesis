@@ -1,5 +1,6 @@
 # coding:utf-8
 import sys
+from tqdm import tqdm 
 import logging
 import math
 import numpy as np
@@ -202,7 +203,7 @@ class Trainer(BaseTrainer):
             if self.use_summaryWriter:
                 self.writer.add_scalar('train/tfr', tfr, self.global_step)
                 self.writer.add_scalar('train/epsilon', epsilon, self.global_step)
-            att_probs, selected_probs, pointers, multi_indices = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, epsilon = -1)
+            att_probs, selected_probs, pointers, multi_indices = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, select_mode='distribute')
 
             #  self.logger.debug(pformat(['multi_indices: ', multi_indices]))
             #  self.logger.debug(pformat(['type of sum_ref: ', type(sum_ref)]))
