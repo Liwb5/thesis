@@ -10,17 +10,17 @@ metrics: rouge_metric
 optimizer: 
     type: Adam
     args:
-        lr: 0.0001
+        lr: 0.00005
     
 trainer:
     type: Trainer
     args:
         epochs: 50
-        save_period: 10000000000000
+        save_period: 10000000000
         print_loss_every: 10                   # print train loss every [num] batches, related to the batch size
         print_token_every: 1000000000             # print training tokens to see the result. print every [num] batches 
         print_val_token_every: 500000000         # print val tokens to see the result. print every [num] batches 
-        do_validation: False 
+        do_validation: False
         max_norm: 1.0
         epsilon: 0.9    # the probability of exploration
         save_dir: checkpoints/
@@ -34,7 +34,7 @@ data_loader:
     test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
     batch_size: 10
     shuffle: False
-    val_data_quota: 100
+    val_data_quota: -1
     data_quota: 100
 
 
