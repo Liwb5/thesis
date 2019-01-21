@@ -209,17 +209,19 @@ class Trainer(BaseTrainer):
             #  self.logger.debug(pformat(['type of sum_ref: ', type(sum_ref)]))
             #  self.logger.debug(pformat(['sum_ref: ', sum_ref]))
 
-            #  multi_sample_reward = []
-            #  for indices in multi_indices:
-            #      _, final_R = self._compute_only_final_reward(dataset, indices, sum_ref)
-            #      multi_sample_reward.append(final_R.unsqueeze(0))
-            #  multi_sample_reward = torch.cat(multi_sample_reward)  # (sample_num, B, 1)
-            #  avg_sample_reward = multi_sample_reward.mean(0)    #(B,1)
+            multi_sample_reward = []
+            if len(multi_indices) > 0: 
+                for indices in multi_indices:
+                    _, final_R = self._compute_only_final_reward(dataset, indices, sum_ref)
+                    multi_sample_reward.append(final_R.unsqueeze(0))
+                multi_sample_reward = torch.cat(multi_sample_reward)  # (sample_num, B, 1)
+                avg_sample_reward = multi_sample_reward.mean(0)    #(B,1)
             #  self.logger.debug(pformat(['multi_sample_reward: ', multi_sample_reward]))
             #  self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
 
             self.logger.debug(['doc_lens: ', doc_lens])
             R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
+
             beta = 0.9
             if self.global_step == 1:
                 self.exp_avg_reward = final_R.mean()
@@ -227,7 +229,9 @@ class Trainer(BaseTrainer):
                 self.exp_avg_reward = (self.exp_avg_reward * beta) + (1-beta)*final_R.mean()
             self.logger.debug(['exp_avg_reward: ', self.exp_avg_reward])
             self.logger.debug(['R: ', final_R])
-            advantage_R = final_R - self.exp_avg_reward
+
+            #  advantage_R = final_R - self.exp_avg_reward
+            advantage_R = final_R - avg_sample_reward
             self.logger.debug(['advantage_R: ', advantage_R])
             #  self.logger.debug(pformat(['advantage_R: ', advantage_R]))
             loss = self._compute_loss2(selected_probs, advantage_R)
