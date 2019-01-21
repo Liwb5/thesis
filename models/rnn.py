@@ -206,7 +206,7 @@ class pn_decoder(nn.Module):
 
         if use_attention:
             self.att = Attention(self.hidden_size, self.hidden_size, 
-                            use_tanh=True, explorate_rate=10, device=self.device)
+                            use_tanh=True, explorate_rate=args.explorate_rate, device=self.device)
 
         # Used for propagating .cuda() command
         self.mask = Parameter(torch.ones(1), requires_grad=False)

@@ -85,7 +85,7 @@ class Trainer(BaseTrainer):
         result = rouge_metric(hyps, refs)
         r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
             for item in result]
-        r = torch.FloatTensor(r).view(-1,1) * 10
+        r = torch.FloatTensor(r).view(-1,1) * 1000
         R = r.repeat(1, pointers.size(1))
         #  self.logger.debug(pformat(['R: ', R]))
         R = Variable(R, requires_grad=False)
@@ -199,10 +199,9 @@ class Trainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             tfr = self._update_tfr()
-            epsilon = self._update_e_greedy(epoch)
+            #  epsilon = self._update_e_greedy(epoch)
             if self.use_summaryWriter:
                 self.writer.add_scalar('train/tfr', tfr, self.global_step)
-                self.writer.add_scalar('train/epsilon', epsilon, self.global_step)
             att_probs, selected_probs, pointers, multi_indices = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, select_mode='distribute')
 
             #  self.logger.debug(pformat(['multi_indices: ', multi_indices]))
