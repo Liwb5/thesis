@@ -61,6 +61,7 @@ class BaseTrainer:
         Full training logic
         """
         for epoch in range(self.start_epoch, self.epochs + 1):
+            train_result = {}
             train_result = self._train_epoch(epoch)
 
             val_result = {}

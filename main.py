@@ -57,7 +57,8 @@ def main(config, resume):
                         data_quota = config['data_loader']['data_quota'])
     logging.info('using %d examples to train. ' % len(train_data))
     data_loader = DataLoader(dataset = train_data,
-                            batch_size = config['data_loader']['batch_size'])
+                            batch_size = config['data_loader']['batch_size'],
+                            shuffle = config['data_loader']['shuffle'])
 
     val_data = Dataset(config['data_loader']['val_data'], 
                         data_quota=config['data_loader']['val_data_quota'])

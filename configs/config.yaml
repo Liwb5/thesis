@@ -40,7 +40,7 @@ data_loader:
     test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
     batch_size: 20
     shuffle: True
-    val_data_quota: -1
+    val_data_quota: 10000
     data_quota: -1
 
 
