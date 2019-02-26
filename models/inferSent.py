@@ -11,6 +11,8 @@ This file contains the definition of encoders used in https://arxiv.org/pdf/1705
 
 import numpy as np
 import time
+import json
+import pickle
 
 import torch
 import torch.nn as nn
@@ -134,11 +136,22 @@ class InferSent(nn.Module):
                     break
         return word_vec
 
-    def build_vocab(self, sentences, tokenize=False):
+    def build_vocab(self, sentences, path, tokenize=False):
         assert hasattr(self, 'w2v_path'), 'w2v path not set'
+        # to save word2vector file to pickle, so that next time we can load it directly. saving time
         word_dict = self.get_word_dict(sentences, tokenize)
+        print('word_dict size : %s' % (len(word_dict)))
+
         self.word_vec = self.get_w2v(word_dict)
-        #  print('Vocab size : %s' % (len(self.word_vec)))
+        with open(path,'wb') as f:
+            #  json.dump(self.word_vec, f)
+            pickle.dump(self.word_vec, f)
+        print('Vocab size : %s' % (len(self.word_vec)))
+
+    def load_vocab(self, w2v_file):
+        with open(w2v_file, 'rb') as f:
+            #  self.word_vec = json.load(f)
+            self.word_vec = pickle.load(f)
 
     # build w2v vocab with k most frequent words
     def build_vocab_k_words(self, K):

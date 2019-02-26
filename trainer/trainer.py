@@ -13,6 +13,9 @@ from pprint import pprint, pformat
 from rouge import Rouge
 from multiprocessing import Pool
 
+def cosine(u, v):
+    return np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))
+
 def rouge_metric(hyps, refs):
     """
     Calculate rewards.
@@ -40,7 +43,8 @@ class Trainer(BaseTrainer):
         Inherited from BaseTrainer.
     """
     def __init__(self, model, loss,  optimizer, resume, config,
-                 data_loader, metrics=None, valid_data_loader=None, lr_scheduler=None, train_logger=None, vocab=None):
+                 data_loader, metrics=None, valid_data_loader=None, lr_scheduler=None, 
+                 train_logger=None, vocab=None, encoder=None):
         super(Trainer, self).__init__(model, loss, metrics, optimizer, resume, config, train_logger)
         self.data_loader = data_loader
         self.valid_data_loader = valid_data_loader
@@ -50,6 +54,9 @@ class Trainer(BaseTrainer):
         self.lr_scheduler = lr_scheduler
         self.max_norm = self.trainer_config['max_norm']
         #  self.log_step = int(np.sqrt(data_loader.batch_size))
+        self.encoder = encoder
+        if self.device is not None and self.encoder is not None:
+            self.encoder = encoder.cuda()
 
     def _eval_metrics(self, docs, pointers, reference):
         #  hypothesis = self.vocab.features_to_tokens(predicts.numpy().tolist())
@@ -94,6 +101,22 @@ class Trainer(BaseTrainer):
             r = r.cuda()
         return R, r
 
+    def _compute_reward_with_inferSent(self, dataset, pointers, refs):
+        hyps = self.vocab.extract_summary_from_index(dataset['doc'], pointers)
+        r = []
+        for hyp, ref in zip(hyps, refs):
+            score = cosine(self.encoder.encode([hyp])[0], self.encoder.encode([ref])[0])
+            r.append(score)
+        self.logger.debug(pformat(['hyps: ', hyps]))
+        self.logger.debug(pformat(['refs: ', refs]))
+        self.logger.debug(pformat(['r: ', r]))
+        r = torch.FloatTensor(r).view(-1,1) * 1000
+        R = r.repeat(1, pointers.size(1))
+        R = Variable(R, requires_grad=False)
+        if self.device is not None:
+            R = R.cuda()
+            r = r.cuda()
+        return R, r
 
 
     #  def predict(self, predicts, target):
@@ -211,7 +234,7 @@ class Trainer(BaseTrainer):
             multi_sample_reward = []
             if len(multi_indices) > 0: 
                 for indices in multi_indices:
-                    _, final_R = self._compute_only_final_reward(dataset, indices, sum_ref)
+                    _, final_R = self._compute_reward_with_inferSent(dataset, indices, sum_ref)
                     multi_sample_reward.append(final_R.unsqueeze(0))
                 multi_sample_reward = torch.cat(multi_sample_reward)  # (sample_num, B, 1)
                 avg_sample_reward = multi_sample_reward.mean(0)    #(B,1)
@@ -219,7 +242,7 @@ class Trainer(BaseTrainer):
             #  self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
 
             self.logger.debug(['doc_lens: ', doc_lens])
-            R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
+            R, final_R = self._compute_reward_with_inferSent(dataset, pointers, sum_ref)
 
             beta = 0.9
             if self.global_step == 1:

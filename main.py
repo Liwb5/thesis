@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 import models
 import models.loss as module_loss
 import models.metrics as module_metrics
+import models.inferSent as module_encoder
 #  from trainer import Trainer, AE_trainer
 import trainer as module_trainer
 from utils import Logger
@@ -38,6 +39,9 @@ def set_seed(seed):
 def logToStderr(config):
     stderr_logger = logging.getLogger('stderr')
     sys.stderr = StreamToLogger(stderr_logger,getattr(logging, config['log_level'].upper()))
+
+def cosine(u, v):
+    return np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))
 
 def main(config, resume):
     set_seed(config['seed'])
@@ -85,6 +89,11 @@ def main(config, resume):
     optimizer = getattr(torch.optim, config['optimizer']['type'])(trainable_params, **config['optimizer']['args'])
     lr_scheduler = None #getattr(torch.optim.lr_scheduler, config['lr_scheduler']['type'])(optimizer, **config['lr_scheduler']['args'])
 
+    # get facebook inferSent sentence embedding model
+    inferSent = getattr(module_encoder, config['inferSent']['type'])(config['inferSent']['args'])
+    inferSent.load_state_dict(torch.load(config['inferSent']['model_path']))
+    inferSent.load_vocab(config['inferSent']['w2v_path'])
+
     trainer = getattr(module_trainer, config['trainer']['type'])(
                       model, loss,  optimizer,
                       resume=resume,
@@ -94,7 +103,8 @@ def main(config, resume):
                       metrics=metrics,
                       lr_scheduler=lr_scheduler,
                       train_logger=train_logger,
-                      vocab = vocab)
+                      vocab = vocab,
+                      encoder = inferSent)
 
     logging.info('begin training. ')
     trainer.train()
