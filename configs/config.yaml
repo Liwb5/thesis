@@ -6,7 +6,8 @@
 # using multi sample instead of exponential moving avg reward
 # learning rate 0.00001
 # 0226: add inferSent to calculate reward instead of rouge metric 
-task_name: train.rl_advantage_R_1000Rewards_explorate_rate5_lr0.00001_inferSent.v2_2.big.0225  # this is the name of the task
+# using new embed file: embed_glove.6B.100d.153826w.npz
+task_name: train.embed_file_rl_advantage_R_1000Rewards_explorate_rate5_lr0.00001_inferSent.v2_2.big.0225  # this is the name of the task
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True
@@ -47,7 +48,7 @@ data_loader:
 
 vocabulary: 
     vocab_file: ./data/dm_data_from_summaRuNNer/origin_data/w2i.json
-    embed_file: ./data/dm_data_from_summaRuNNer/origin_data/embedding.npz
+    embed_file: ./data/dm_data_from_summaRuNNer/origin_data/embed_glove.6B.100d.153826w.npz
     sent_trunc: 120
     doc_trunc: 50
 
