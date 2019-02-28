@@ -7,7 +7,7 @@
 # learning rate 0.00001
 # 0226: add inferSent to calculate reward instead of rouge metric 
 # using new embed file: embed_glove.6B.100d.153826w.npz
-task_name: train.embed_file_rl_advantage_R_1000Rewards_explorate_rate5_lr0.00001_inferSent.v2_2.big.0225  # this is the name of the task
+task_name: train.embed_file_rl_advantage_R_1000Rewards_explorate_rate5_lr0.00001.v2_2.big.0228  # this is the name of the task
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True
@@ -22,6 +22,7 @@ optimizer:
     
 trainer:
     type: Trainer
+    reward_type: rouge    # inferSent, rouge 
     args:
         epochs: 30
         save_period: 1

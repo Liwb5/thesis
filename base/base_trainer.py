@@ -42,6 +42,7 @@ class BaseTrainer:
         self.save_period = self.trainer_config['save_period']
         self.start_epoch = 1
         self.global_step = 0
+        self.reward_type = config['trainer']['reward_type']
 
         # setup visualization writer instance
         #  writer_save_path = ''.join((self.trainer_config['log_dir'], 'tensorboardx.log'))

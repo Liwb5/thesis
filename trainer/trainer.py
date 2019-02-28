@@ -234,7 +234,11 @@ class Trainer(BaseTrainer):
             multi_sample_reward = []
             if len(multi_indices) > 0: 
                 for indices in multi_indices:
-                    _, final_R = self._compute_reward_with_inferSent(dataset, indices, sum_ref)
+                    if self.reward_type == 'inferSent':
+                        _, final_R = self._compute_reward_with_inferSent(dataset, indices, sum_ref)
+                    elif self.reward_type == 'rouge':
+                        _, final_R = self._compute_only_final_reward(dataset, indices, sum_ref)
+
                     multi_sample_reward.append(final_R.unsqueeze(0))
                 multi_sample_reward = torch.cat(multi_sample_reward)  # (sample_num, B, 1)
                 avg_sample_reward = multi_sample_reward.mean(0)    #(B,1)
@@ -242,7 +246,10 @@ class Trainer(BaseTrainer):
             #  self.logger.debug(pformat(['avg_sample_reward: ', avg_sample_reward]))
 
             self.logger.debug(['doc_lens: ', doc_lens])
-            R, final_R = self._compute_reward_with_inferSent(dataset, pointers, sum_ref)
+            if self.reward_type == 'inferSent':
+                R, final_R = self._compute_reward_with_inferSent(dataset, pointers, sum_ref)
+            elif self.reward_type == 'rouge':
+                R, final_R = self._compute_only_final_reward(dataset, pointers, sum_ref)
 
             beta = 0.9
             if self.global_step == 1:
