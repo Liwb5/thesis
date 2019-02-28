@@ -49,11 +49,11 @@ class Test():
     def result_to_file(self, dataset, pointers, count):
         hyps = self.vocab.extract_summary_to_file(dataset['doc'], pointers)
         refs = dataset['summaries']
-        for i in range(count, count+len(refs)):
-            with open(self.base_dir+'hyp/hyp.%05d.txt'%i, 'w') as f:
+        for i in range(len(refs)):
+            with open(self.base_dir+'hyp/hyp.%05d.txt'%(i+count), 'w') as f:
                 f.write(hyps[i])
 
-            with open(self.base_dir+'ref/ref.A.%05d.txt'%i, 'w') as f:
+            with open(self.base_dir+'ref/ref.A.%05d.txt'%(i+count), 'w') as f:
                 f.write(refs[i])
 
         return count+len(refs)
@@ -94,7 +94,7 @@ class Test():
                 #  pointers = [[i for i in range(min(min(doc_lens), 3))] for _ in range(len(sum_ref))]
                 #  logging.info(['length of dataset: ', len(sum_ref)])
                 #  logging.info(['pointers: ', pointers])
-                #  test_metrics.append(self._eval_metrics(dataset['doc'], pointers, sum_ref))
+                test_metrics.append(self._eval_metrics(dataset['doc'], pointers, sum_ref))
                 count = self.result_to_file(dataset, pointers, count)
                 for i in range(len(sum_ref)):
                     logging.info(pointers[i])
