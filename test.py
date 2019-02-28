@@ -22,6 +22,7 @@ import trainer as module_trainer
 from utils import Logger
 from utils import StreamToLogger
 from utils.config import *
+from utils.util import make_dir
 from data_loader import Vocab
 from data_loader import Dataset
 
@@ -34,12 +35,29 @@ class Test():
         self.metrics = metrics
         self.vocab = vocab
         self.device = config['device']
+        self.base_dir = config['trainer']['args']['output_dir']
+        make_dir(self.base_dir+'ref/')
+        make_dir(self.base_dir+'hyp/')
+
 
     def _eval_metrics(self, docs, pointers, reference):
         #  hypothesis = self.vocab.features_to_tokens(predicts.numpy().tolist())
         hypothesis = self.vocab.extract_summary_from_index(docs, pointers)
         results = self.metrics(hypothesis, reference)
         return results
+
+    def result_to_file(self, dataset, pointers, count):
+        hyps = self.vocab.extract_summary_to_file(dataset['doc'], pointers)
+        refs = dataset['summaries']
+        for i in range(count, count+len(refs)):
+            with open(self.base_dir+'hyp/hyp.%05d.txt'%i, 'w') as f:
+                f.write(hyps[i])
+
+            with open(self.base_dir+'ref/ref.A.%05d.txt'%i, 'w') as f:
+                f.write(refs[i])
+
+        return count+len(refs)
+
 
     def test(self):
         """
@@ -51,6 +69,7 @@ class Test():
         METRICS = ["rouge-1", "rouge-2", "rouge-l"]
         STATS = ["f", "p", "r"]   
         final_test_metrics = {m:{s: 0.0 for s in STATS} for m in METRICS}
+        count = 0
         with torch.no_grad():
             for step, dataset in enumerate(tqdm(self.test_data_loader)):
                 docs_features, doc_lens, docs_tokens, \
@@ -75,7 +94,8 @@ class Test():
                 #  pointers = [[i for i in range(min(min(doc_lens), 3))] for _ in range(len(sum_ref))]
                 #  logging.info(['length of dataset: ', len(sum_ref)])
                 #  logging.info(['pointers: ', pointers])
-                test_metrics.append(self._eval_metrics(dataset['doc'], pointers, sum_ref))
+                #  test_metrics.append(self._eval_metrics(dataset['doc'], pointers, sum_ref))
+                count = self.result_to_file(dataset, pointers, count)
                 for i in range(len(sum_ref)):
                     logging.info(pointers[i])
 

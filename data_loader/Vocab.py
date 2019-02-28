@@ -268,6 +268,28 @@ class Vocab():
 
         return hyps
 
+    def extract_summary_to_file(self, docs, index):
+        """
+        Args:
+            docs(B, 1): 
+            index(B, sent_um): two dimension array(tensor), every line represent the indices of selected sentence in a document.
+        """
+        if not isinstance(docs,list):
+            docs = [docs]
+
+        hyps = []
+        for doc, idx in zip(docs, index):
+            sents = doc.split(self.split_token)
+            summary = [sents[i] for i in idx]
+            summary = '\n'.join(summary)
+            # if the summary too long, then calculate rouge score maybe report error with 
+            # maximum recursion depth exceeded in comparison
+            #  max_len = min(500, len(summary))
+            #  summary = summary[:max_len]
+            hyps.append(summary)
+
+        return hyps
+
 
     def add_vocab(self, vocab_file):
         self.word_list = [self.PAD_TOKEN, self.UNK_TOKEN, self.SOS_TOKEN, self.EOS_TOKEN]
