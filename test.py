@@ -72,8 +72,11 @@ class Test():
 
                 att_probs, selected_probes, pointers, _ = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0, select_mode='max')
 
+                #  pointers = [[i for i in range(min(min(doc_lens), 3))] for _ in range(len(sum_ref))]
+                #  logging.info(['length of dataset: ', len(sum_ref)])
+                #  logging.info(['pointers: ', pointers])
                 test_metrics.append(self._eval_metrics(dataset['doc'], pointers, sum_ref))
-                for i range(pointers.size(0)):
+                for i in range(len(sum_ref)):
                     logging.info(pointers[i])
 
             for i in range(len(test_metrics)):
@@ -108,7 +111,7 @@ def test(config, resume):
 
     vocab = Vocab(**config['vocabulary'])
     # build model architecture
-    model = getattr(models, config['model']['type'])(config['model']['args'], device=config['device'])
+    model = getattr(models, config['model']['type'])(config['model']['args'], device=config['device'], embed=vocab.embedding)
     #  logging.info(['model infomation: ', model])
 
     # get function handles of loss and metrics
