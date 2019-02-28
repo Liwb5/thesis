@@ -14,6 +14,7 @@ optimizer:
     
 trainer:
     type: Trainer
+    reward_type: rouge    # inferSent, rouge 
     args:
         epochs: 1
         save_period: 10000000000000
