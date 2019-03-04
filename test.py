@@ -1,4 +1,5 @@
 # coding:utf-8
+# command: python test.py -r ./checkpoints/task_name/checkpoint-model_RL_AE-epoch1.pth &
 import os
 import pickle
 import datetime
