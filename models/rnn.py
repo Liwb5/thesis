@@ -52,7 +52,7 @@ class rnn_encoder(nn.Module):
         for index, t in enumerate(x):
             t = t[:seq_lens[index], :] # (l_n, h)
             t = torch.t(t).unsqueeze(0) # (1, h, l_n)
-            output.append(f.avg_pool1d(t, t.size(2)))
+            output.append(F.avg_pool1d(t, t.size(2)))
 
         output = torch.cat(output).squeeze(2)  
         return output    # (n, h)
@@ -110,6 +110,20 @@ class stack_encoder(nn.Module):
         out = torch.cat(out).squeeze(2)
         return out
 
+    def avg_pool1d(self, x, seq_lens):
+        """ @x: (n, l, h).  average pooling in second dimension (l)
+            @seq_lens: (n, 1)  
+            @output: (n, h)
+        """
+        output = []
+        for index, t in enumerate(x):
+            t = t[:seq_lens[index], :] # (l_n, h)
+            t = torch.t(t).unsqueeze(0) # (1, h, l_n)
+            output.append(F.avg_pool1d(t, t.size(2)))
+
+        output = torch.cat(output).squeeze(2)  
+        return output    # (n, h)
+
     def pad_doc(self,words_out,doc_lens):
         if not isinstance(doc_lens, list):
             doc_lens = [doc_lens]
@@ -145,13 +159,14 @@ class stack_encoder(nn.Module):
         # word level RNN
         word_hidden = self.word_RNN(word_embed)[0]  # (N, sent_lens, 2H)
         #  logging.debug(['after word_RNN(expected N,max_sent_lens[4], 2H[8]): ', word_hidden.size()])
-        sent_embed = self.max_pool1d(word_hidden, sent_lens) #(N, 2H)
+        #  sent_embed = self.max_pool1d(word_hidden, sent_lens) #(N, 2H)
+        sent_embed = self.avg_pool1d(word_hidden, sent_lens) #(N, 2H)
         #  logging.debug(['after max_pool1d(expected N, 2H[8]): ', sent_embed.size()])
         sent_embed  = self.pad_doc(sent_embed, doc_lens)
         logging.debug(['after pad_doc, sent_embed(expected B,max_doc_len, 2H[8]): ', sent_embed.size()])
         sent_hidden = self.sent_RNN(sent_embed)[0]
         logging.debug(['after sent_RNN, sent_hidden(expected B,max_doc_len, 2H[8]): ', sent_hidden.size()])
-        doc_embed = self.max_pool1d(sent_hidden,doc_lens)                                # (B,2*H)
+        doc_embed = self.avg_pool1d(sent_hidden,doc_lens)                                # (B,2*H)
         logging.debug(['after doc max_pool1d, doc_embed(expected B, 2H[8]): ', doc_embed.size()])
 
         # sent_hidden: (B, max_doc_len, 2H) 是每个句子对应的hidden state

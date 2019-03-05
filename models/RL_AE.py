@@ -65,7 +65,7 @@ class RL_AE(BaseModel):
                                                                 hidden = enc_hidden_t,
                                                                 context = enc_out,
                                                                 docs_lens = doc_lens,
-                                                                select_mode = select_mode)
+                                                                select_mode = 'max')
                 multi_indices.append(pointers)
 
         att_probs, selected_probs, pointers, hidden = self.pn_decoder(inputs = sents_embed, 
