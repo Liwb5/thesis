@@ -159,14 +159,14 @@ class stack_encoder(nn.Module):
         # word level RNN
         word_hidden = self.word_RNN(word_embed)[0]  # (N, sent_lens, 2H)
         #  logging.debug(['after word_RNN(expected N,max_sent_lens[4], 2H[8]): ', word_hidden.size()])
-        #  sent_embed = self.max_pool1d(word_hidden, sent_lens) #(N, 2H)
-        sent_embed = self.avg_pool1d(word_hidden, sent_lens) #(N, 2H)
+        sent_embed = self.max_pool1d(word_hidden, sent_lens) #(N, 2H)
+        #  sent_embed = self.avg_pool1d(word_hidden, sent_lens) #(N, 2H)
         #  logging.debug(['after max_pool1d(expected N, 2H[8]): ', sent_embed.size()])
         sent_embed  = self.pad_doc(sent_embed, doc_lens)
         logging.debug(['after pad_doc, sent_embed(expected B,max_doc_len, 2H[8]): ', sent_embed.size()])
         sent_hidden = self.sent_RNN(sent_embed)[0]
         logging.debug(['after sent_RNN, sent_hidden(expected B,max_doc_len, 2H[8]): ', sent_hidden.size()])
-        doc_embed = self.avg_pool1d(sent_hidden,doc_lens)                                # (B,2*H)
+        doc_embed = self.max_pool1d(sent_hidden,doc_lens)                                # (B,2*H)
         logging.debug(['after doc max_pool1d, doc_embed(expected B, 2H[8]): ', doc_embed.size()])
 
         # sent_hidden: (B, max_doc_len, 2H) 是每个句子对应的hidden state
