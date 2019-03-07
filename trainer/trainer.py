@@ -172,6 +172,24 @@ class Trainer(BaseTrainer):
         #  loss = -loss.sum() / num_samples
         return loss
 
+    def _compute_loss3(self, probs, R):
+        """
+        probs:(sample_num, B, max_dec_len)
+        R: (sample_num, B, 1)
+        """
+        pass
+        #  probs = probs.transpose(1,2)
+        #  R = R.squeeze(2)
+        #  for step in range(probs.size(0)):
+        #      for i in range(probs.size(1)):
+        #          logprob = torch.log(probs[step, i])
+        #          logprobs += -logprob
+        #
+        #      loss = logprobs * R[step]
+
+
+
+
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
@@ -225,9 +243,9 @@ class Trainer(BaseTrainer):
             #  epsilon = self._update_e_greedy(epoch)
             if self.use_summaryWriter:
                 self.writer.add_scalar('train/tfr', tfr, self.global_step)
-            att_probs, selected_probs, pointers, multi_indices = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, select_mode='distribute')
+            att_probs, selected_probs, pointers, multi_indices, multi_probs = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr, select_mode='distribute')
 
-            #  self.logger.debug(pformat(['multi_indices: ', multi_indices]))
+            self.logger.debug(pformat(['multi_indices: ', multi_indices]))
             #  self.logger.debug(pformat(['type of sum_ref: ', type(sum_ref)]))
             #  self.logger.debug(pformat(['sum_ref: ', sum_ref]))
 
@@ -261,9 +279,11 @@ class Trainer(BaseTrainer):
 
             #  advantage_R = final_R - self.exp_avg_reward
             advantage_R = final_R - avg_sample_reward
+            #  advantage_R = multi_sample_reward - final_R.unsqueeze(0).repeat(len(multi_indices), 1, 1)
             self.logger.debug(['advantage_R: ', advantage_R])
             #  self.logger.debug(pformat(['advantage_R: ', advantage_R]))
             loss = self._compute_loss2(selected_probs, advantage_R)
+            #  loss = self._compute_loss3(multi_probs, advantage_R)
             #  loss = self._compute_loss()
             self.logger.debug(pformat(['loss: ', loss.item()]))
 
