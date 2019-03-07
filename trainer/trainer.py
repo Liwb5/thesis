@@ -153,13 +153,17 @@ class Trainer(BaseTrainer):
 
     def _compute_loss2(self, probs, R):
         #  num_samples = R.size(0) * R.size(1)
-        logprobs = 0
-        probs = probs.transpose(0,1)
-        for prob in probs:
-            logprob = torch.log(prob)
-            logprobs += -logprob
+        #  logprobs = 0
+        #  probs = probs.transpose(0,1)
+        #  for prob in probs:
+        #      logprob = torch.log(prob)
+        #      logprobs += -logprob
 
-        self.logger.debug(['logprob: ', logprobs])
+        logprobs = -torch.log(probs)
+        logprobs = logprobs.sum(1).view(-1,1)
+        self.logger.debug(['logprobs: ', logprobs])
+
+        #  self.logger.debug(['logprob: ', logprobs])
         # guard againt nan
         logprobs[(logprobs != logprobs).detach()] = 0.
         # clamp any inf's to 0 
@@ -170,6 +174,7 @@ class Trainer(BaseTrainer):
         #  logprobs = torch.log(probs).transpose(0,1)
         #  loss = torch.mul(logprobs, R).view(-1)
         #  loss = -loss.sum() / num_samples
+
         return loss
 
     def _compute_loss3(self, probs, R):
