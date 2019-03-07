@@ -1,5 +1,5 @@
 # using fake data to debug when modify code
-task_name: debug.rl_inferSent.v2_2.0225  # this is the name of the task
+task_name: debug.maxSample_rl_inferSent.v2_2.0307
 device: null  # if you do not want to use GPU, set null
 log_level: debug
 use_summaryWriter: False 
@@ -69,7 +69,7 @@ model:
         bidirectional: True
         use_attention: False
         select_mode: distribute 
-        sample_num: 1
+        sample_num: 5
         explorate_rate: 5
 
 inferSent:
