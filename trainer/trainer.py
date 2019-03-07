@@ -182,16 +182,25 @@ class Trainer(BaseTrainer):
         probs:(sample_num, B, max_dec_len)
         R: (sample_num, B, 1)
         """
-        pass
+        R = R.squeeze(2)
+        logprobs = -torch.log(probs)
+        self.logger.debug(['logprobs: ', logprobs])
+        logprobs = logprobs.sum(2)  # (sample_num, B)
+        self.logger.debug(['logprobs after sum: ', logprobs])
+        loss = logprobs * R
+        self.logger.debug(['loss: ', loss])
+        loss = loss.mean()
+        self.logger.debug(['final loss: ', loss])
+        return loss
+
         #  probs = probs.transpose(1,2)
-        #  R = R.squeeze(2)
         #  for step in range(probs.size(0)):
         #      for i in range(probs.size(1)):
         #          logprob = torch.log(probs[step, i])
         #          logprobs += -logprob
         #
         #      loss = logprobs * R[step]
-
+        #
 
 
 
@@ -283,12 +292,12 @@ class Trainer(BaseTrainer):
             self.logger.debug(['R: ', final_R])
 
             #  advantage_R = final_R - self.exp_avg_reward
-            advantage_R = final_R - avg_sample_reward
-            #  advantage_R = multi_sample_reward - final_R.unsqueeze(0).repeat(len(multi_indices), 1, 1)
+            #  advantage_R = final_R - avg_sample_reward
+            advantage_R = multi_sample_reward - final_R.unsqueeze(0).repeat(multi_probs.size(0), 1, 1)
             self.logger.debug(['advantage_R: ', advantage_R])
             #  self.logger.debug(pformat(['advantage_R: ', advantage_R]))
-            loss = self._compute_loss2(selected_probs, advantage_R)
-            #  loss = self._compute_loss3(multi_probs, advantage_R)
+            #  loss = self._compute_loss2(selected_probs, advantage_R)
+            loss = self._compute_loss3(multi_probs, advantage_R)
             #  loss = self._compute_loss()
             self.logger.debug(pformat(['loss: ', loss.item()]))
 

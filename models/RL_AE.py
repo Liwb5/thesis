@@ -76,7 +76,7 @@ class RL_AE(BaseModel):
                                                         hidden = enc_hidden_t,
                                                         context = enc_out,
                                                         docs_lens = doc_lens,
-                                                        select_mode = select_mode)
+                                                        select_mode = 'max')
 
 
         return att_probs, selected_probs, pointers, multi_indices, multi_probs
