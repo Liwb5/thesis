@@ -92,7 +92,7 @@ class Trainer(BaseTrainer):
         result = rouge_metric(hyps, refs)
         r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
             for item in result]
-        r = torch.FloatTensor(r).view(-1,1) * 1000
+        r = torch.FloatTensor(r).view(-1,1) * 1
         R = r.repeat(1, pointers.size(1))
         #  self.logger.debug(pformat(['R: ', R]))
         R = Variable(R, requires_grad=False)
@@ -110,7 +110,7 @@ class Trainer(BaseTrainer):
         self.logger.debug(pformat(['hyps: ', hyps]))
         self.logger.debug(pformat(['refs: ', refs]))
         self.logger.debug(pformat(['r: ', r]))
-        r = torch.FloatTensor(r).view(-1,1) * 1000
+        r = torch.FloatTensor(r).view(-1,1) * 1
         R = r.repeat(1, pointers.size(1))
         R = Variable(R, requires_grad=False)
         if self.device is not None:
@@ -311,6 +311,7 @@ class Trainer(BaseTrainer):
             self.optimizer.step()
             total_loss += loss.item()
             total_reward += final_R.sum().item()
+            #  total_reward += avg_sample_reward.sum().item()
 
             if self.global_step % self.trainer_config['print_loss_every'] == 0:
                 self.logger.info(pformat(['selected_probs: ', selected_probs[0]]))
@@ -371,7 +372,7 @@ class Trainer(BaseTrainer):
                     labels = labels.cuda()
                     #  label_lens = label_lens.cuda()
 
-                att_probs, selected_logprobes, pointers, _ = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0)
+                att_probs, selected_probs, pointers, _, _ = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0)
 
                 val_metrics.append(self._eval_metrics(dataset['doc'], pointers, sum_ref))
 
