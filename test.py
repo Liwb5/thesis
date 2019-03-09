@@ -90,7 +90,7 @@ class Test():
                     labels = labels.cuda()
                     #  label_lens = label_lens.cuda()
 
-                att_probs, selected_probes, pointers, _ = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0, select_mode='max')
+                att_probs, selected_probes, pointers, _, _ = self.model(docs_features, doc_lens, sum_features, sum_word_lens, labels, label_lens, tfr=0, select_mode='max')
 
                 #  pointers = [[i for i in range(min(min(doc_lens), 3))] for _ in range(len(sum_ref))]
                 #  logging.info(['length of dataset: ', len(sum_ref)])

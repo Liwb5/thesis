@@ -66,9 +66,6 @@ class BaseTrainer:
             train_result = self._train_epoch(epoch)
 
             # evaluate model performance according to configured metric, save best checkpoint as model_best
-            if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, save_best=None)
-
             val_result = {}
             if self.trainer_config['do_validation'] and self.do_validation:
                 self.logger.info('doing validation ... ')
@@ -80,6 +77,8 @@ class BaseTrainer:
                 self.train_logger.add_entry(log) # record some information so that we can save it in a checkpoint
 
             self.logger.info(log)
+            if epoch % self.save_period == 0:
+                self._save_checkpoint(epoch, save_best=None)
 
     def _train_epoch(self, epoch):
         """
