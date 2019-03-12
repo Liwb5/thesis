@@ -11,7 +11,8 @@
 # hidden_size 200
 # 0307: fix the bug when calculate loss function  
 # 0307: a new method to calculate loss function which is discovered in banditsum
-task_name: train.new_loss_hs200_weight_decay_max_pool1d_embed_300d_file_rl_advantage_R_1Rewards_explorate_rate3_lr0.000001.v2_5.big.0309
+# 0312: change reward function, increase the weight of rouge2 and rouge_L to 4
+task_name: train.rewardfunc_new_loss_hs200_embed_300d_file_rl_advantage_R_1Rewards_explorate_rate3_lr0.0000001.v2_5.big.0312
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True
@@ -22,7 +23,7 @@ metrics: rouge_metric
 optimizer: 
     type: Adam
     args:
-        lr: 0.000001
+        lr: 0.0000001
         weight_decay: 0.000001
     
 trainer:

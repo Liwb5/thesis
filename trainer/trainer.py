@@ -90,7 +90,7 @@ class Trainer(BaseTrainer):
         #  self.logger.debug(pformat(['type of hyps: ', type(hyps)]))
         #  result = self.metrics(hyps, refs, avg=False)
         result = rouge_metric(hyps, refs)
-        r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
+        r = [item['rouge-1']['f'] + 4*item['rouge-2']['f'] + 4*item['rouge-l']['f'] \
             for item in result]
         r = torch.FloatTensor(r).view(-1,1) * 1
         R = r.repeat(1, pointers.size(1))
