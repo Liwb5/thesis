@@ -119,7 +119,7 @@ def pretty_print(dictionary):
 def test(config, resume):
     log_format='%(asctime)s-%(levelname)s-%(name)s: %(message)s'
     logging.basicConfig(filename = ''.join((config['trainer']['args']['output_dir'], 'result.txt')),
-                        filemode = 'a',
+                        filemode = 'w',
                         level = getattr(logging, config['log_level'].upper()),
                         format = log_format)
 
@@ -175,6 +175,9 @@ if __name__ == '__main__':
 
     elif args.resume:
         config = torch.load(args.resume)['config']
+
+    #  config['model']['args']['max_selected'] = 3
+    config['data_loader']['batch_size'] = 2
 
     if config['device'] is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(config['device'])
