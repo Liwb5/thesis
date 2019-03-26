@@ -1,6 +1,7 @@
 # coding:utf-8
 # command: python test.py -r ./checkpoints/task_name/checkpoint-model_RL_AE-epoch1.pth &
 import os
+import re
 import pickle
 import datetime
 import logging
@@ -28,7 +29,7 @@ from data_loader import Vocab
 from data_loader import Dataset
 
 class Test():
-    def __init__(self, model, loss, config, test_data_loader, metrics, vocab):
+    def __init__(self, model, loss, config, test_data_loader, metrics, vocab, epoch_num):
         self.model = model
         self.loss = loss
         self.config = config
@@ -37,8 +38,10 @@ class Test():
         self.vocab = vocab
         self.device = config['device']
         self.base_dir = config['trainer']['args']['output_dir']
-        make_dir(self.base_dir+'ref/')
-        make_dir(self.base_dir+'hyp/')
+        self.hyp_dir = 'hyp' + epoch_num + '/'
+        self.ref_dir = 'ref' + epoch_num + '/'
+        make_dir(self.base_dir+self.hyp_dir)
+        make_dir(self.base_dir+self.ref_dir)
 
 
     def _eval_metrics(self, docs, pointers, reference):
@@ -51,10 +54,10 @@ class Test():
         hyps = self.vocab.extract_summary_to_file(dataset['doc'], pointers)
         refs = dataset['summaries']
         for i in range(len(refs)):
-            with open(self.base_dir+'hyp/hyp.%05d.txt'%(i+count), 'w') as f:
+            with open(self.base_dir+self.hyp_dir+'hyp.%05d.txt'%(i+count), 'w') as f:
                 f.write(hyps[i])
 
-            with open(self.base_dir+'ref/ref.A.%05d.txt'%(i+count), 'w') as f:
+            with open(self.base_dir+self.ref_dir+'ref.A.%05d.txt'%(i+count), 'w') as f:
                 f.write(refs[i])
 
         return count+len(refs)
@@ -116,9 +119,9 @@ def pretty_print(dictionary):
         for k, v in sorted(scores.items(), key=lambda p:p[0]):
             logging.info([k, v])
 
-def test(config, resume):
+def test(config, resume, epoch_num):
     log_format='%(asctime)s-%(levelname)s-%(name)s: %(message)s'
-    logging.basicConfig(filename = ''.join((config['trainer']['args']['output_dir'], 'result.txt')),
+    logging.basicConfig(filename = ''.join((config['trainer']['args']['output_dir'], 'result%s.txt'%(epoch_num))),
                         filemode = 'w',
                         level = getattr(logging, config['log_level'].upper()),
                         format = log_format)
@@ -148,7 +151,7 @@ def test(config, resume):
     if config['device'] is not None:
         model = model.cuda()
 
-    t = Test(model, loss, config, test_data_loader, metrics, vocab)
+    t = Test(model, loss, config, test_data_loader, metrics, vocab, epoch_num)
     result = t.test()
 
     # print valid metrics result
@@ -170,6 +173,10 @@ if __name__ == '__main__':
                            help='indices of GPUs to enable (default: all)')
     args = parser.parse_args()
 
+    # extract the number of epoch
+    model_name = args.resume.split('/')[-1]
+    epoch = re.findall(r'\d', model_name)[-1]  
+
     if args.config:
         config = get_config_from_yaml(args.config)
 
@@ -182,4 +189,4 @@ if __name__ == '__main__':
     if config['device'] is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(config['device'])
 
-    test(config, args.resume)
+    test(config, args.resume, epoch)
