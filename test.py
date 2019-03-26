@@ -171,6 +171,8 @@ if __name__ == '__main__':
                            help='config file path (default: None)')
     parser.add_argument('-d', '--device', default=None, type=str,
                            help='indices of GPUs to enable (default: all)')
+    parser.add_argument('-m', '--max_selected', default=None, type=int,
+                           help='max selected sentences (default: None)')
     args = parser.parse_args()
 
     # extract the number of epoch
@@ -183,7 +185,8 @@ if __name__ == '__main__':
     elif args.resume:
         config = torch.load(args.resume)['config']
 
-    #  config['model']['args']['max_selected'] = 3
+    if args.max_selected is not None:
+        config['model']['args']['max_selected'] = args.max_selected
     config['data_loader']['batch_size'] = 2
 
     if config['device'] is not None:
