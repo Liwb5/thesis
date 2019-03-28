@@ -121,7 +121,7 @@ def pretty_print(dictionary):
 
 def test(config, resume, epoch_num):
     log_format='%(asctime)s-%(levelname)s-%(name)s: %(message)s'
-    logging.basicConfig(filename = ''.join((config['trainer']['args']['output_dir'], 'result%s.txt'%(epoch_num))),
+    logging.basicConfig(filename = ''.join((config['trainer']['args']['output_dir'], 'result%s_%d.txt'%(epoch_num,config['model']['args']['max_selected']))),
                         filemode = 'w',
                         level = getattr(logging, config['log_level'].upper()),
                         format = log_format)
