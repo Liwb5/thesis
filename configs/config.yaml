@@ -12,7 +12,9 @@
 # 0307: fix the bug when calculate loss function  
 # 0307: a new method to calculate loss function which is discovered in banditsum
 # 0312: change reward function, increase the weight of rouge2 and rouge_L to 4
-task_name: train.rougeReward_new_loss_hs200_embed_300d_file_rl_advantage_R_1Rewards_explorate_rate1_lr0.0000001.v2_5.big.0312
+# 0326: to test explorate_rate
+# 0330: to test sample number
+task_name: train.sample_num1_rougeReward_new_loss_hs200_embed_300d_file_rl_advantage_R_1Rewards_explorate_rate3_lr0.0000001.v2_5.big.0330
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True
@@ -82,8 +84,8 @@ model:
         bidirectional: True
         use_attention: False
         select_mode: distribute 
-        explorate_rate: 1
-        sample_num: 5
+        explorate_rate: 3
+        sample_num: 1
 
 inferSent:
     type: InferSent
