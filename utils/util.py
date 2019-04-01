@@ -11,3 +11,7 @@ def make_dir(path):
 
 def dict_to_namedtuple(dictionary):
     return namedtuple('GenericDict', dictionary.keys())(**dictionary)
+
+def create_dir(path):
+    if not os.path.exists(path): 
+        os.makedirs(path)
