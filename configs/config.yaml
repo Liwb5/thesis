@@ -7,11 +7,11 @@
 # using new embed file: embed_glove.84B.300d.153826w.npz
 # 0307: fix the bug when calculate loss function  
 # 0307: a new method to calculate loss function which is discovered in banditsum
-# 0312: change reward function, increase the weight of rouge2 and rouge_L to 4
 # 0326: to test explorate_rate
-# 0330: to test sample number
+# 0330: to test sample_num 
 # 0401: add CNN and daily mail dataset 
-task_name: train.cnndm_sample_num3_rougeReward_embed_300d_file_1Rewards_explorate_rate3_lr0.0000001.v2_5.big.0402
+# 0402: max_selected number
+task_name: train.maxSelect3_cnndm_sample_num5_rougeReward_embed_300d_file_1Rewards_explorate_rate3_lr0.0000001.v2_5.big.0402
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True
@@ -43,12 +43,12 @@ trainer:
         output_dir: outputs/
 
 data_loader:
-    # train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
-    # val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
-    # test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
-    train_data: ./data/cnn-dailymail/finished_files/train.json
-    val_data: ./data/cnn-dailymail/finished_files/val.json
-    test_data: ./data/cnn-dailymail/finished_files/test.json
+    train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
+    val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
+    test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
+    # train_data: ./data/cnn-dailymail/finished_files/train.json
+    # val_data: ./data/cnn-dailymail/finished_files/val.json
+    # test_data: ./data/cnn-dailymail/finished_files/test.json
     batch_size: 20
     shuffle: True
     val_data_quota: -1
@@ -77,7 +77,7 @@ model:
         max_len: 120
         sos_id: 2
         eos_id: 3
-        max_selected: 4
+        max_selected: 3
         rnn_cell: gru
         input_dropout_p: 0.0 
         dropout_p: 0.0 
@@ -85,7 +85,7 @@ model:
         use_attention: False
         select_mode: distribute 
         explorate_rate: 3
-        sample_num: 3
+        sample_num: 5
 
 inferSent:
     type: InferSent
