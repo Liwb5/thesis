@@ -11,7 +11,7 @@ all_test_urls = "../data/cnn-dailymail/url_lists/all_test.txt"
 
 cnn_tokenized_stories_dir = "../data/cnn-dailymail/cnn_stories_tokenized"
 dm_tokenized_stories_dir = "../data/cnn-dailymail/dm_stories_tokenized"
-#  finished_files_dir = "../data/cnn-dailymail/finished_files/"
+finished_files_dir = "../data/cnn-dailymail/finished_files2/"
 
 VOCAB_SIZE = 200000
 dm_single_close_quote = u'\u2019' # unicode
@@ -66,17 +66,41 @@ def get_art_abs(story_file):
         else:
             article_lines.append(line)
 
-    is_article = True
-    if len(article_lines) == 0 or len(highlights) == 0:
-        is_article = False
+    #  is_article = True
+    #  if len(article_lines) == 0 or len(highlights) == 0:
+    #      is_article = False
     # Make article into a single string
-    article = '\n'.join(article_lines)
-    abstract = '\n'.join(highlights)
+    #  article = '\n'.join(article_lines)
+    #  abstract = '\n'.join(highlights)
 
     # Make abstract into a signle string, putting <s> and </s> tags around the sentences
     #  abstract = ' '.join(["%s %s %s" % (SENTENCE_START, sent, SENTENCE_END) for sent in highlights])
 
-    return article, abstract, is_article
+    return article_lines, highlights #, is_article
+
+def judge(article, abstract, filename):
+    """
+    article: list of string, every element is a sentence
+    abstract: list of string
+    filename: string, filename of article
+    """
+    is_article = True
+
+    if len(article) == 0 or len(abstract) == 0: # some article is empty
+        print('%s file is empty. '%(filename))
+        is_article = False
+        return is_article
+
+    a = ' '.join(article)
+    a = a.split(' ')
+    b = ' '.join(abstract)
+    b = b.split(' ')
+    if len(a) < 10 or len(b) < 10:  # the content of an article is too little
+        print('The content of %s file is too little. '%(filename))
+        is_article = False
+        return is_article
+
+    return is_article
 
 def write_to_json(url_file, out_file, makevocab=False):
     url_list = read_text_file(url_file)
@@ -101,10 +125,15 @@ def write_to_json(url_file, out_file, makevocab=False):
         else:
             print("Error: Couldn't find tokenized story file %s in either tokenized story directories %s and %s. Was there an error during tokenization?" % (s, cnn_tokenized_stories_dir, dm_tokenized_stories_dir)) 
 
-        article, abstract, is_article = get_art_abs(story_file)
+        article, abstract = get_art_abs(story_file)
+        is_article = judge(article, abstract, s)
         if is_article == False:
-            print('story file %s is empty'%(s))
+            #  print('story file %s is empty'%(s))
             continue
+        else:
+            article = '\n'.join(article)
+            abstract = '\n'.join(abstract)
+
         res.append({'doc':article, 'summaries':abstract, 'labels': '1\n0'})
 
         # Write the vocab to file, if applicable
@@ -142,6 +171,6 @@ def write_to_json(url_file, out_file, makevocab=False):
 if __name__=='__main__':
 
     if not os.path.exists(finished_files_dir): os.makedirs(finished_files_dir)
-    #  write_to_json(all_train_urls, os.path.join(finished_files_dir, 'train.json'), makevocab=True)
-    #  write_to_json(all_val_urls, os.path.join(finished_files_dir, 'val.json'))
+    write_to_json(all_train_urls, os.path.join(finished_files_dir, 'train.json'), makevocab=True)
+    write_to_json(all_val_urls, os.path.join(finished_files_dir, 'val.json'))
     write_to_json(all_test_urls, os.path.join(finished_files_dir, 'test.json'))
