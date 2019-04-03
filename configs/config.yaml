@@ -11,7 +11,8 @@
 # 0330: to test sample_num 
 # 0401: add CNN and daily mail dataset 
 # 0402: max_selected number
-task_name: train.maxSelect3_cnndm_sample_num5_rougeReward_embed_300d_file_1Rewards_explorate_rate3_lr0.0000001.v2_5.big.0402
+# 0403: using recall score instead of f-score in ROUGE-L when calculating reward
+task_name: train.recall_maxSelect3_cnndm_sample_num5_rougeReward_embed_300d_explorate_rate3_lr0.0000001.v2_5.big.0402
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True
