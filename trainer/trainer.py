@@ -72,7 +72,7 @@ class Trainer(BaseTrainer):
             self.logger.debug(pformat(['hyp: ', hyp]))
             result = self.metrics(hyp, ref, avg=False)
             # maybe can divide to 3
-            r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
+            r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['r'] \
                 for item in result]
             R.append(r)
         
@@ -86,11 +86,11 @@ class Trainer(BaseTrainer):
 
     def _compute_only_final_reward(self, dataset, pointers, refs):
         hyps = self.vocab.extract_summary_from_index(dataset['doc'], pointers)
-        #  self.logger.debug(pformat(['hyps: ', hyps]))
-        #  self.logger.debug(pformat(['type of hyps: ', type(hyps)]))
+        #  self.logger.debug(['hyps: ', hyps])
+        #  self.logger.debug(['refs: ', ])
         #  result = self.metrics(hyps, refs, avg=False)
         result = rouge_metric(hyps, refs)
-        r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['f'] \
+        r = [item['rouge-1']['f'] + item['rouge-2']['f'] + item['rouge-l']['r'] \
             for item in result]
         r = torch.FloatTensor(r).view(-1,1) * 1
         R = r.repeat(1, pointers.size(1))
