@@ -43,12 +43,12 @@ trainer:
         output_dir: outputs/
 
 data_loader:
-    train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
-    val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
-    test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
-    # train_data: ./data/cnn-dailymail/finished_files/train.json
-    # val_data: ./data/cnn-dailymail/finished_files/val.json
-    # test_data: ./data/cnn-dailymail/finished_files/test.json
+    # train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
+    # val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
+    # test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
+    train_data: ./data/cnn-dailymail/finished_files2/train.json
+    val_data: ./data/cnn-dailymail/finished_files2/val.json
+    test_data: ./data/cnn-dailymail/finished_files2/test.json
     batch_size: 20
     shuffle: True
     val_data_quota: -1
