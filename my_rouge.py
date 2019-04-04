@@ -14,7 +14,8 @@ def rouge155(args):
     if args.b_limit:
         print('using byte limit. ')
         output = r.convert_and_evaluate(
-                rouge_args='-e {}/data -a -2 -1 -c 95 -U -n 2 -w 1.2 -b 275'.format(ROUGE_PATH))
+                rouge_args='-e {}/data -a -c 95 -m -n 2 -b 275'.format(ROUGE_PATH))
+                #  rouge_args='-e {}/data -a -2 -1 -c 95 -U -n 2 -w 1.2 -b 275'.format(ROUGE_PATH))
     else:
         print('not using byte limit. ')
         output = r.convert_and_evaluate()
