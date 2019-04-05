@@ -104,6 +104,7 @@ class BaseTrainer:
             #  'exp_avg_reward': self.exp_avg_reward,
             'logger': self.train_logger,
             'state_dict': self.model.state_dict(),
+            #  'state_dict': self.model.cpu().state_dict(), #using cpu() to save state_dict into cpu mode, better
             'optimizer': self.optimizer.state_dict(),
             #  'monitor_best': self.mnt_best,
             'config': self.config

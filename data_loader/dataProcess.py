@@ -11,7 +11,7 @@ all_test_urls = "../data/cnn-dailymail/url_lists/all_test.txt"
 
 cnn_tokenized_stories_dir = "../data/cnn-dailymail/cnn_stories_tokenized"
 dm_tokenized_stories_dir = "../data/cnn-dailymail/dm_stories_tokenized"
-finished_files_dir = "../data/cnn-dailymail/finished_files2/"
+finished_files_dir = "../data/cnn-dailymail/finished_files4/"
 
 VOCAB_SIZE = 200000
 dm_single_close_quote = u'\u2019' # unicode
@@ -62,9 +62,15 @@ def get_art_abs(story_file):
         elif line.startswith("@highlight"):
             next_is_highlight = True
         elif next_is_highlight:
-            highlights.append(line)
+            if len(line.split(' ')) > 2:  # if sentence length is too short, drop it
+                highlights.append(line)
+            else:
+                print('empty line %s'%(line))
         else:
-            article_lines.append(line)
+            if len(line.split(' ')) > 2:
+                article_lines.append(line)
+            else:
+                print('empty line %s'%(line))
 
     #  is_article = True
     #  if len(article_lines) == 0 or len(highlights) == 0:
