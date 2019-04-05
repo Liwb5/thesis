@@ -23,16 +23,17 @@ class BaseTrainer:
         self.device = config['device']
         self.model = model
         self.loss = loss
+        self.metrics = metrics
+        self.optimizer = optimizer
         self.exp_avg_reward = torch.zeros(1)
 
         if self.device is not None:
-            torch.cuda.set_device(config['device'])
+            #  torch.cuda.set_device(config['device'])
             self.model = model.cuda()
             self.loss = loss.cuda()
             self.exp_avg_reward = self.exp_avg_reward.cuda()
 
-        self.metrics = metrics
-        self.optimizer = optimizer
+
         self.train_logger = train_logger
 
         self.use_summaryWriter = config['use_summaryWriter']
@@ -56,6 +57,7 @@ class BaseTrainer:
 
         if resume:
             self._resume_checkpoint(resume)
+
     
     def train(self):
         """
@@ -124,7 +126,7 @@ class BaseTrainer:
         :param resume_path: Checkpoint path to be resumed
         """
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
-        checkpoint = torch.load(resume_path)
+        checkpoint = torch.load(resume_path, map_location=lambda storage, loc:storage) # load parameters to CPU
         self.start_epoch = checkpoint['epoch'] + 1
         self.global_step = checkpoint['global_step'] + 1
         #  self.exp_avg_reward = checkpoint['exp_avg_reward']
@@ -142,6 +144,11 @@ class BaseTrainer:
                                 'Optimizer parameters not being resumed.')
         else:
             self.optimizer.load_state_dict(checkpoint['optimizer'])
+            if self.device is not None:
+                for state in self.optimizer.state.values():
+                    for k, v in state.items():
+                        if isinstance(v, torch.Tensor):
+                            state[k] = v.cuda()
     
         self.train_logger = checkpoint['logger']
         self.logger.info("Checkpoint '{}' (epoch {}) loaded".format(resume_path, self.start_epoch))
