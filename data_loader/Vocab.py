@@ -258,13 +258,18 @@ class Vocab():
         hyps = []
         for doc, idx in zip(docs, index):
             sents = doc.split(self.split_token)
-            summary = [sents[i] for i in idx]
-            summary = ' '.join(summary).split()
-            # if the summary too long, then calculate rouge score maybe report error with 
-            # maximum recursion depth exceeded in comparison
-            max_len = min(500, len(summary)) 
-            summary = summary[:max_len]
-            hyps.append(' '.join(summary))
+            try:
+                summary = [sents[i] for i in idx]
+                summary = ' '.join(summary).split()
+                # if the summary too long, then calculate rouge score maybe report error with 
+                # maximum recursion depth exceeded in comparison
+                max_len = min(500, len(summary)) 
+                summary = summary[:max_len]
+                hyps.append(' '.join(summary))
+            except IndexError as e:
+                logging.warn(['error in extract_summary_from_index:', e])
+                hyps.append(' '.join(sents))
+                continue
 
         return hyps
 
