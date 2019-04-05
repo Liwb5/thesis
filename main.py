@@ -53,7 +53,7 @@ def main(config, resume):
                         format = log_format)
     logToStderr(config)
 
-    logging.info(['config: ', pformat(config)])
+    logging.info(['config: ', config])
     train_logger = Logger()
 
     # setup data_loader instances
@@ -75,6 +75,7 @@ def main(config, resume):
     # build model architecture
     model = getattr(models, config['model']['type'])(config['model']['args'], device=config['device'], embed=vocab.embedding)
     logging.info(['model infomation: ', model])
+    logging.info(['my PID is: ', os.getpid()])
 
     # get function handles of loss and metrics
     weights = torch.ones(config['model']['args']['vocab_size'])
