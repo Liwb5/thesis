@@ -189,7 +189,13 @@ if __name__ == '__main__':
         config['model']['args']['max_selected'] = args.max_selected
     config['data_loader']['batch_size'] = 2
 
-    if config['device'] is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(config['device'])
+    if args.device is not None:
+        torch.cuda.set_device(int(args.device))
+        #  os.environ["CUDA_VISIBLE_DEVICES"] = args.device
+        #  print('GPU is %s' %(args.device))
+    elif config['device'] is not None:
+        #  print('GPU is %d' %(config['device']))
+        torch.cuda.set_device(config['device'])
+        #  os.environ["CUDA_VISIBLE_DEVICES"] = str(config['device'])
 
     test(config, args.resume, epoch)

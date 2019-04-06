@@ -118,8 +118,8 @@ if __name__ == '__main__':
                            help='path to latest checkpoint (default: None)')
     parser.add_argument('-n', '--taskname', default=None, type=str,
                            help='task name(default: None)')
-    #  parser.add_argument('-d', '--device', default=None, type=str,
-    #                         help='indices of GPUs to enable (default: all)')
+    parser.add_argument('-d', '--device', default=None, type=str,
+                           help='indices of GPUs to enable (default: all)')
     args = parser.parse_args()
 
     if args.config:
@@ -133,7 +133,13 @@ if __name__ == '__main__':
     else:
         raise AssertionError("Configuration file need to be specified. Add '-c config.json', for example.")
     
-    if config['device'] is not None:
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(config['device'])
+    if args.device is not None:
+        torch.cuda.set_device(int(args.device))
+        #  os.environ["CUDA_VISIBLE_DEVICES"] = args.device
+        #  logging.info('GPU is %s' %(args.device))
+    elif config['device'] is not None:
+        #  logging.info('GPU is %d' %(config['device']))
+        torch.cuda.set_device(config['device'])
+        #  os.environ["CUDA_VISIBLE_DEVICES"] = str(config['device'])
 
     main(config, args.resume)
