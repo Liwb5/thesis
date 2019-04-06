@@ -145,7 +145,7 @@ def test(config, resume, epoch_num):
 
     metrics = getattr(module_metrics, config['metrics']) 
 
-    checkpoint = torch.load(resume)
+    checkpoint = torch.load(resume, map_location=lambda storage, loc:storage)
 
     model.load_state_dict(checkpoint['state_dict'])
     if config['device'] is not None:
@@ -183,7 +183,7 @@ if __name__ == '__main__':
         config = get_config_from_yaml(args.config)
 
     elif args.resume:
-        config = torch.load(args.resume)['config']
+        config = torch.load(args.resume, map_location=lambda storage, loc:storage)['config']
 
     if args.max_selected is not None:
         config['model']['args']['max_selected'] = args.max_selected
