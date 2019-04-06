@@ -12,7 +12,8 @@
 # 0401: add CNN and daily mail dataset 
 # 0402: max_selected number
 # 0403: using recall score instead of f-score in ROUGE-L when calculating reward
-task_name: train.recall_maxSelect3_cnndm_sample_num5_rougeReward_embed_300d_explorate_rate3_lr0.0000001.v2_5.big.0402
+# 0404: preprocess data in order to remove sentence which length is shorter than 2
+task_name: train.recall_maxSelect3_cnndm_sample_num5_rougeReward_embed_300d_explorate_rate3_lr0.0000001.v2_5.big.0404
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True
@@ -47,9 +48,9 @@ data_loader:
     # train_data: ./data/dm_data_from_summaRuNNer/origin_data/train.json
     # val_data: ./data/dm_data_from_summaRuNNer/origin_data/val.json
     # test_data: ./data/dm_data_from_summaRuNNer/origin_data/test.json
-    train_data: ./data/cnn-dailymail/finished_files2/train.json
-    val_data: ./data/cnn-dailymail/finished_files2/val.json
-    test_data: ./data/cnn-dailymail/finished_files2/test.json
+    train_data: ./data/cnn-dailymail/finished_files3/train.json
+    val_data: ./data/cnn-dailymail/finished_files3/val.json
+    test_data: ./data/cnn-dailymail/finished_files3/test.json
     batch_size: 20
     shuffle: True
     val_data_quota: -1
