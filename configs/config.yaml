@@ -13,7 +13,7 @@
 # 0402: max_selected number
 # 0403: using recall score instead of f-score in ROUGE-L when calculating reward
 # 0404: preprocess data in order to remove sentence which length is shorter than 2
-task_name: train.recall_maxSelect3_cnndm_sample_num5_rougeReward_embed_300d_explorate_rate3_lr0.0000001.v2_5.big.0404
+task_name: train.recall_maxSelect4_cnndm_sample_num5_rougeReward_embed_300d_explorate_rate3_lr0.0000001.v2_5.big.0406
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True
@@ -79,7 +79,7 @@ model:
         max_len: 120
         sos_id: 2
         eos_id: 3
-        max_selected: 3
+        max_selected: 4
         rnn_cell: gru
         input_dropout_p: 0.0 
         dropout_p: 0.0 
