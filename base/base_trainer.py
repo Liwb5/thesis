@@ -78,6 +78,7 @@ class BaseTrainer:
             if self.train_logger is not None:
                 self.train_logger.add_entry(log) # record some information so that we can save it in a checkpoint
 
+            # 保存一个最佳的验证集结果，每次与它比较，效果更好则best=True，否则best=False
             self.logger.info(log)
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=None)

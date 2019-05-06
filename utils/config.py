@@ -22,8 +22,8 @@ def get_config_from_yaml(yaml_file):
     """
     with open(yaml_file, 'r') as f:
         config = yaml.load(f)
-    config = process_config(config)
-    save_config(yaml_file, config['trainer']['args']['save_dir'])
+    #  config = process_config(config)
+    #  save_config(yaml_file, config['trainer']['args']['save_dir'])
     return config 
 
 

@@ -125,6 +125,8 @@ if __name__ == '__main__':
     if args.config:
         # load config file
         config = get_config_from_yaml(args.config)
+        config = process_config(config)
+        save_config(args.config, config['trainer']['args']['save_dir'])
         #  config = get_config_from_json(args.config)
     elif args.resume:
         # load config file from checkpoint, in case new config file is not given.
