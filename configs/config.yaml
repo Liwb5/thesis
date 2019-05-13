@@ -13,7 +13,8 @@
 # 0402: max_selected number
 # 0403: using recall score instead of f-score in ROUGE-L when calculating reward
 # 0404: preprocess data in order to remove sentence which length is shorter than 2
-task_name: train.recall_maxSelect4_cnndm_sample_num5_rougeReward_embed_300d_explorate_rate3_lr0.0000001.v2_5.big.0406
+# 0506: run inferSent in CNN and DailyMail dataset
+task_name: train.inferSent_cnndm_sample_num5_rougeReward_embed_300d_explorate_rate3_lr0.0000001.v2_5.big.0506
 device: 0    # if you do not want to use GPU, set null
 log_level: info 
 use_summaryWriter: True
@@ -29,7 +30,7 @@ optimizer:
     
 trainer:
     type: Trainer
-    reward_type: rouge #inferSent   #rouge    # inferSent, rouge 
+    reward_type: inferSent   #rouge    # inferSent, rouge 
     args:
         epochs: 30
         save_period: 1

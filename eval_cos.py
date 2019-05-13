@@ -1,8 +1,10 @@
 import models.inferSent as module_encoder
+from tqdm import tqdm
 from utils.config import *
 import torch
 import torch.nn as nn
 import numpy as np
+import os
 
 def cosine(u, v):
     return np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))
@@ -15,12 +17,14 @@ inferSent.load_state_dict(torch.load(config['inferSent']['model_path']))
 inferSent.load_vocab(config['inferSent']['w2v_path'])
 inferSent.cuda()
 
-task_name = 'train.inferSentReward_new_loss_hs200_embed_300d_file_rl_advantage_R_1Rewards_explorate_rate3_lr0.0000001.v2_5.big.0312'
-number = 3
-total_article = 10350
+task_name = 'train.recall_maxSelect3_cnndm_sample_num5_rougeReward_embed_300d_explorate_rate3_lr0.0000001.v2_5.big.0404'
+number = 1
 
 ref_path = './outputs/%s/ref%d/' %(task_name, number)
 hyp_path = './outputs/%s/hyp%d/' %(task_name, number)
+
+total_article = len([name for name in os.listdir(hyp_path) if os.path.isfile(os.path.join(hyp_path, name))])
+print('total_article is %d'%total_article)
 
 score = []
 for i in range(total_article): # total test article
@@ -32,8 +36,6 @@ for i in range(total_article): # total test article
         hyp_sum = ' '.join(hyp_sum.split('\n'))
         
     score.append(cosine(inferSent.encode(ref_sum)[0], inferSent.encode(hyp_sum)[0]))
-    if i % 200 == 0:
-        print('have processed %d'%i)
     
 avg_score = sum(score)/total_article
 
