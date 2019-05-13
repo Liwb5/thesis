@@ -115,7 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--config', default=None, type=str,
                            help='config file path (default: None)')
     parser.add_argument('-r', '--resume', default=None, type=str,
-                           help='path to latest checkpoint (default: None)')
+                           help='path to the checkpoint that you want to reload. (default: None)')
     parser.add_argument('-n', '--taskname', default=None, type=str,
                            help='task name(default: None)')
     parser.add_argument('-d', '--device', default=None, type=str,
