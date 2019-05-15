@@ -18,7 +18,7 @@ import models.metrics as module_metrics
 import models.inferSent as module_encoder
 #  from trainer import Trainer, AE_trainer
 import trainer as module_trainer
-from utils import Logger
+from utils import Recorder 
 from utils import StreamToLogger
 from utils.config import *
 from data_loader import Vocab
@@ -36,7 +36,7 @@ def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
 
-def logToStderr(config):
+def stderr2log(config):
     stderr_logger = logging.getLogger('stderr')
     sys.stderr = StreamToLogger(stderr_logger,getattr(logging, config['log_level'].upper()))
 
@@ -46,15 +46,8 @@ def cosine(u, v):
 def main(config, resume):
     set_seed(config['seed'])
 
-    log_format='%(asctime)s-%(levelname)s-%(name)s: %(message)s'
-    logging.basicConfig(filename = ''.join((config['trainer']['args']['log_dir'], 'log')),
-                        filemode = 'a',
-                        level = getattr(logging, config['log_level'].upper()),
-                        format = log_format)
-    logToStderr(config)
-
-    logging.info(['config: ', config])
-    train_logger = Logger()
+    #  logging.info(['config: ', config])
+    train_recorder = Recorder()
 
     # setup data_loader instances
     train_data = Dataset(config['data_loader']['train_data'], 
@@ -103,7 +96,7 @@ def main(config, resume):
                       valid_data_loader=valid_data_loader,
                       metrics=metrics,
                       lr_scheduler=lr_scheduler,
-                      train_logger=train_logger,
+                      train_recorder=train_recorder,
                       vocab = vocab,
                       encoder = inferSent)
 
@@ -116,18 +109,18 @@ if __name__ == '__main__':
                            help='config file path (default: None)')
     parser.add_argument('-r', '--resume', default=None, type=str,
                            help='path to the checkpoint that you want to reload. (default: None)')
-    parser.add_argument('-n', '--taskname', default=None, type=str,
-                           help='task name(default: None)')
     parser.add_argument('-d', '--device', default=None, type=str,
                            help='indices of GPUs to enable (default: all)')
+    parser.add_argument('-n', '--taskname', default=None, type=str,
+                           help='task name(default: None)')
     args = parser.parse_args()
 
     if args.config:
         # load config file
         config = get_config_from_yaml(args.config)
         config = process_config(config)
+        # save config file so that we can know the config when we look back
         save_config(args.config, config['trainer']['args']['save_dir'])
-        #  config = get_config_from_json(args.config)
     elif args.resume:
         # load config file from checkpoint, in case new config file is not given.
         # Use '--config' and '--resume' arguments together to load trained model and train more with changed config.
@@ -135,13 +128,20 @@ if __name__ == '__main__':
     else:
         raise AssertionError("Configuration file need to be specified. Add '-c config.json', for example.")
     
+    log_format='%(asctime)s-%(levelname)s-%(name)s: %(message)s'
+    logging.basicConfig(filename = ''.join((config['trainer']['args']['log_dir'], 'log')),
+                        filemode = 'a',
+                        level = getattr(logging, config['log_level'].upper()),
+                        format = log_format)
+    stderr2log(config)
+
     if args.device is not None:
+        logging.info('using GPU device %s'%(args.device))
         torch.cuda.set_device(int(args.device))
+        config['device'] = int(args.device)
         #  os.environ["CUDA_VISIBLE_DEVICES"] = args.device
         #  logging.info('GPU is %s' %(args.device))
-    elif config['device'] is not None:
-        #  logging.info('GPU is %d' %(config['device']))
-        torch.cuda.set_device(config['device'])
-        #  os.environ["CUDA_VISIBLE_DEVICES"] = str(config['device'])
+    else:
+        config['device'] = args.device
 
     main(config, args.resume)

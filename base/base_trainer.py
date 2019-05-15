@@ -14,7 +14,7 @@ class BaseTrainer:
     """
     Base class for all trainers
     """
-    def __init__(self, model, loss, metrics, optimizer, resume, config, train_logger=None):
+    def __init__(self, model, loss, metrics, optimizer, resume, config, train_recorder=None):
 
         self.config = config
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -34,7 +34,7 @@ class BaseTrainer:
             self.exp_avg_reward = self.exp_avg_reward.cuda()
 
 
-        self.train_logger = train_logger
+        self.train_recorder = train_recorder
 
         self.use_summaryWriter = config['use_summaryWriter']
         self.batch_size = self.config['data_loader']['batch_size']
@@ -75,8 +75,8 @@ class BaseTrainer:
 
             # save logged informations into log dict
             log = {'epoch': epoch, **train_result, **val_result}
-            if self.train_logger is not None:
-                self.train_logger.add_entry(log) # record some information so that we can save it in a checkpoint
+            if self.train_recorder is not None:
+                self.train_recorder.add_entry(log) # record some information so that we can save it in a checkpoint
 
             # 保存一个最佳的验证集结果，每次与它比较，效果更好则best=True，否则best=False
             self.logger.info(log)
@@ -105,7 +105,7 @@ class BaseTrainer:
             'epoch': epoch,
             'global_step': self.global_step, 
             #  'exp_avg_reward': self.exp_avg_reward,
-            'logger': self.train_logger,
+            'recorder': self.train_recorder,
             'state_dict': self.model.state_dict(),
             #  'state_dict': self.model.cpu().state_dict(), #using cpu() to save state_dict into cpu mode, better
             'optimizer': self.optimizer.state_dict(),
@@ -151,5 +151,5 @@ class BaseTrainer:
                         if isinstance(v, torch.Tensor):
                             state[k] = v.cuda()
     
-        self.train_logger = checkpoint['logger']
+        self.train_recorder = checkpoint['logger']
         self.logger.info("Checkpoint '{}' (epoch {}) loaded".format(resume_path, self.start_epoch))

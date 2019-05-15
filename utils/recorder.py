@@ -2,7 +2,7 @@
 import json
 import logging
 
-class Logger:
+class Recorder:
     """
     Training process logger
 

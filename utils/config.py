@@ -36,8 +36,6 @@ def get_config_from_json(json_file):
     # parse the configurations from the config json file provided
     with open(json_file, 'r') as config_file:
         config = json.load(config_file)
-    config = process_config(config)
-    save_config(json_file, config['trainer']['args']['save_dir'])
     return config
 
 #  def replace_config(new_config, old_config):

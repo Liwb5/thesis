@@ -44,8 +44,8 @@ class Trainer(BaseTrainer):
     """
     def __init__(self, model, loss,  optimizer, resume, config,
                  data_loader, metrics=None, valid_data_loader=None, lr_scheduler=None, 
-                 train_logger=None, vocab=None, encoder=None):
-        super(Trainer, self).__init__(model, loss, metrics, optimizer, resume, config, train_logger)
+                 train_recorder=None, vocab=None, encoder=None):
+        super(Trainer, self).__init__(model, loss, metrics, optimizer, resume, config, train_recorder)
         self.data_loader = data_loader
         self.valid_data_loader = valid_data_loader
         self.vocab = vocab
